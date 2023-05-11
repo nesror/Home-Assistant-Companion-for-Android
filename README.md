@@ -8,8 +8,8 @@
 ### 公众号  
 关注公众号及时获取最新版，各种使用技巧以及Hass的新奇玩法(回复 最新版 可以获取最新版的下载地址,也可以回复HA获取HomeAssistant全新Flutter版APP)  
 <img src="gzh.png" height="120"/>
-## [全新Flutter版APP]：
-* [SmartHouse]([https://www.bilibili.com/video/BV18W4y1p7mk](https://github.com/nesror/SmartHouse)) 
+## 全新Flutter版APP：
+* [SmartHouse](https://github.com/nesror/SmartHouse)
 
 ## [使用方法](https://mp.weixin.qq.com/s?__biz=MzIzOTU5NTEwMQ==&mid=2247483691&idx=1&sn=503ee797e03a1227539e5aa36144a2af&chksm=e926fa19de51730f5a26d3050675c4e04bd90497fd2bb2a614451d8fdf8f3c97ac478bfab36d#rd)：
 * [APP使用](https://www.bilibili.com/video/BV18W4y1p7mk)

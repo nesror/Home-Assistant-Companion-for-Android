@@ -1,4 +1,4 @@
-# HASS官方app适配国内环境版! 
+# Home Assistant官方app适配国内环境版! 
 [![version](https://img.shields.io/github/v/release/nesror/Home-Assistant-Companion-for-Android?display_name=tag)](https://github.com/nesror/Home-Assistant-Companion-for-Android/releases/latest)
 [![stars](https://img.shields.io/github/stars/nesror/Home-Assistant-Companion-for-Android)](https://github.com/nesror/Home-Assistant-Companion-for-Android/stargazers)
 [![issues](https://img.shields.io/github/issues/nesror/Home-Assistant-Companion-for-Android)](https://github.com/nesror/Home-Assistant-Companion-for-Android/issues)

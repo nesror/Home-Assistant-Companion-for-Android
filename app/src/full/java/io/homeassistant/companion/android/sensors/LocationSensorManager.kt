@@ -768,12 +768,12 @@ class LocationSensorManager : LocationSensorManagerBase() {
         val locationManager =
             context.getSystemService(LOCATION_SERVICE) as LocationManager
 
-        if (lastTime != 0L && System.currentTimeMillis() - lastTime < 60000) return
+        if (lastTime != 0L && System.currentTimeMillis() - lastTime < 40000) return
         lastTime = System.currentTimeMillis()
 
         locationManager.requestLocationUpdates(
             LocationManager.GPS_PROVIDER,
-            180000,
+            120000,
             0f,
             object : LocationListener {
                 override fun onLocationChanged(it: Location) {
@@ -786,7 +786,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
                         }
                     }
 
-                    if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 < 60000) return
+                    if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 < 40000) return
                     lastTime2 = System.currentTimeMillis()
                     Log.e("onLocationChanged", "${it.latitude}:${it.longitude}")
                     getGeocodedLocation(it)
@@ -917,7 +917,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
         var accuracy = 0
         if (location.accuracy.toInt() >= 0) {
             accuracy = location.accuracy.toInt()
-            if (accuracy > 20) return
+            if (accuracy > 18) return
         }
         val updateLocation: UpdateLocation
         val updateLocationAs: String
@@ -972,7 +972,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
             return
         }
 
-        if (now - location.time < 300000) {
+        if (now - location.time < 70000) {
             Log.d(
                 TAG,
                 "Received location that is ${now - location.time} milliseconds old, ${location.time} compared to $now with source ${location.provider}"

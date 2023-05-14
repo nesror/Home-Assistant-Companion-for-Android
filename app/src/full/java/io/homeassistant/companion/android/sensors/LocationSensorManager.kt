@@ -768,13 +768,13 @@ class LocationSensorManager : LocationSensorManagerBase() {
         val locationManager =
             context.getSystemService(LOCATION_SERVICE) as LocationManager
 
-        if (lastTime != 0L && System.currentTimeMillis() - lastTime < 40000) return
+        if (lastTime != 0L && System.currentTimeMillis() - lastTime < 30000) return
         lastTime = System.currentTimeMillis()
 
         locationManager.requestLocationUpdates(
             LocationManager.GPS_PROVIDER,
             120000,
-            0f,
+            5f,
             object : LocationListener {
                 override fun onLocationChanged(it: Location) {
                     runBlocking {
@@ -795,14 +795,14 @@ class LocationSensorManager : LocationSensorManagerBase() {
             }, Looper.getMainLooper()
         )
 
-        if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 > 120000) {
+        if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 > 180000) {
             locationManager.requestLocationUpdates(
                 LocationManager.NETWORK_PROVIDER,
                 180000,
-                0f,
+                5f,
                 object : LocationListener {
                     override fun onLocationChanged(it: Location) {
-                        if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 < 100000) return
+                        if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 < 180000) return
                         runBlocking {
                             getEnabledServers(
                                 latestContext,
@@ -822,16 +822,18 @@ class LocationSensorManager : LocationSensorManagerBase() {
         }
 
         runBlocking {
-            getEnabledServers(
-                latestContext,
-                singleAccurateLocation
-            ).forEach { serverId ->
-                locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                    ?.let {
-                        Log.e("getLastKnownLocation", "${it.latitude}:${it.longitude}")
+            locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                ?.let {
+                    Log.e("getLastKnownLocation", "${it.latitude}:${it.longitude}")
+                    if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 < 180000) return@let
+                    getEnabledServers(
+                        latestContext,
+                        singleAccurateLocation
+                    ).forEach { serverId ->
                         sendLocationUpdate(it, serverId)
                     }
-            }
+                }
+
         }
         // gps
         // return locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
@@ -972,7 +974,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
             return
         }
 
-        if (now - location.time < 70000) {
+        if (now - location.time < 300000) {
             Log.d(
                 TAG,
                 "Received location that is ${now - location.time} milliseconds old, ${location.time} compared to $now with source ${location.provider}"

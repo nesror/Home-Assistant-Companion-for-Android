@@ -2,6 +2,7 @@ package io.homeassistant.companion.android.matter
 
 import android.app.Application
 import android.content.IntentSender
+import android.util.Log
 import androidx.activity.result.ActivityResult
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,6 +23,10 @@ class MatterCommissioningViewModel @Inject constructor(
     application: Application
 ) : AndroidViewModel(application) {
 
+    companion object {
+        private const val TAG = "MatterCommissioningView"
+    }
+
     sealed class CommissioningFlowStep {
         object NotStarted : CommissioningFlowStep()
         object NotRegistered : CommissioningFlowStep()
@@ -40,9 +45,13 @@ class MatterCommissioningViewModel @Inject constructor(
     var serverId by mutableStateOf(0)
         private set
 
-    fun checkSetup() {
+    fun checkSetup(isNewDevice: Boolean) {
         viewModelScope.launch {
-            if (step != CommissioningFlowStep.NotStarted) return@launch
+            if (!isNewDevice && step != CommissioningFlowStep.NotStarted) {
+                return@launch
+            } else {
+                step = CommissioningFlowStep.NotStarted
+            }
 
             if (!serverManager.isRegistered()) {
                 step = CommissioningFlowStep.NotRegistered
@@ -84,11 +93,16 @@ class MatterCommissioningViewModel @Inject constructor(
 
     suspend fun syncThreadIfNecessary(): IntentSender? {
         step = CommissioningFlowStep.Working
-        return threadManager.syncPreferredDataset(
-            getApplication<Application>().applicationContext,
-            serverId,
-            viewModelScope
-        )
+        return try {
+            threadManager.syncPreferredDataset(
+                getApplication<Application>().applicationContext,
+                serverId,
+                viewModelScope
+            )
+        } catch (e: Exception) {
+            Log.w(TAG, "Unable to sync preferred Thread dataset, continuing", e)
+            null
+        }
     }
 
     fun onThreadPermissionResult(result: ActivityResult, code: String) {

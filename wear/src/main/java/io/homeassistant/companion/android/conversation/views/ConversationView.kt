@@ -44,7 +44,7 @@ fun ConversationResultView(
                     PositionIndicator(scalingLazyListState = scrollState)
                 }
             },
-            timeText = { TimeText(visible = !scrollState.isScrollInProgress) }
+            timeText = { TimeText(scalingLazyListState = scrollState) }
         ) {
             ScalingLazyColumn(
                 state = scrollState,
@@ -56,8 +56,13 @@ fun ConversationResultView(
                         SpeechBubble(
                             text = conversationViewModel.speechResult.ifEmpty {
                                 when {
-                                    (conversationViewModel.supportsConversation) -> stringResource(R.string.no_results)
-                                    (!conversationViewModel.supportsConversation && !conversationViewModel.checkSupportProgress) -> stringResource(R.string.no_conversation_support)
+                                    conversationViewModel.supportsAssist -> stringResource(R.string.no_results)
+                                    (!conversationViewModel.supportsAssist && !conversationViewModel.checkSupportProgress) ->
+                                        if (conversationViewModel.useAssistPipeline) {
+                                            stringResource(R.string.no_assist_support, "2023.5", stringResource(R.string.no_assist_support_assist_pipeline))
+                                        } else {
+                                            stringResource(R.string.no_assist_support, "2023.1", stringResource(R.string.no_assist_support_conversation))
+                                        }
                                     (!conversationViewModel.isRegistered) -> stringResource(R.string.not_registered)
                                     else -> "..."
                                 }
@@ -108,10 +113,10 @@ fun SpeechBubble(text: String, isResponse: Boolean) {
                         colorResource(R.color.colorSpeechText)
                     },
                     AbsoluteRoundedCornerShape(
-                        topLeftPercent = 30,
-                        topRightPercent = 30,
-                        bottomLeftPercent = if (isResponse) 0 else 30,
-                        bottomRightPercent = if (isResponse) 30 else 0
+                        topLeft = 12.dp,
+                        topRight = 12.dp,
+                        bottomLeft = if (isResponse) 0.dp else 12.dp,
+                        bottomRight = if (isResponse) 12.dp else 0.dp
                     )
                 )
                 .padding(4.dp)

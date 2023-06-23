@@ -36,7 +36,7 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "11"
     }
 
     compileOptions {
@@ -55,23 +55,23 @@ android {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.10")
-    implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.10")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.22")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:1.8.21")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
 
-    implementation("com.google.dagger:hilt-android:2.45")
-    kapt("com.google.dagger:hilt-android-compiler:2.45")
+    implementation("com.google.dagger:hilt-android:2.46.1")
+    kapt("com.google.dagger:hilt-android-compiler:2.46.1")
 
-    api("androidx.room:room-runtime:2.5.0")
-    api("androidx.room:room-ktx:2.5.0")
-    kapt("androidx.room:room-compiler:2.5.0")
+    api("androidx.room:room-runtime:2.5.1")
+    api("androidx.room:room-ktx:2.5.1")
+    kapt("androidx.room:room-compiler:2.5.1")
 
-    api("androidx.work:work-runtime-ktx:2.8.0")
+    api("androidx.work:work-runtime-ktx:2.8.1")
 
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    api("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-jackson:2.9.0")
-    implementation("com.squareup.okhttp3:okhttp:4.10.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.10.0")
+    implementation("com.squareup.okhttp3:okhttp:4.11.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.5")
     implementation("org.altbeacon:android-beacon-library:2.19.5")
 

@@ -919,7 +919,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
         var accuracy = 0
         if (location.accuracy.toInt() >= 0) {
             accuracy = location.accuracy.toInt()
-            if (accuracy > 18) return
+            if (accuracy > 25) return
         }
         val updateLocation: UpdateLocation
         val updateLocationAs: String
@@ -974,7 +974,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
             return
         }
 
-        if (now - location.time < 300000) {
+        if (now - location.time < 320000) {
             Log.d(
                 TAG,
                 "Received location that is ${now - location.time} milliseconds old, ${location.time} compared to $now with source ${location.provider}"

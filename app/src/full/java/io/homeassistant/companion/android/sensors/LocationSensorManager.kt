@@ -29,6 +29,7 @@ import io.homeassistant.companion.android.common.data.integration.Entity
 import io.homeassistant.companion.android.common.data.integration.UpdateLocation
 import io.homeassistant.companion.android.common.data.integration.ZoneAttributes
 import io.homeassistant.companion.android.common.data.integration.containsWithAccuracy
+import io.homeassistant.companion.android.common.data.wifi.WifiHelperImpl
 import io.homeassistant.companion.android.common.notifications.DeviceCommandData
 import io.homeassistant.companion.android.common.sensors.LocationSensorManagerBase
 import io.homeassistant.companion.android.common.sensors.SensorManager
@@ -41,12 +42,14 @@ import io.homeassistant.companion.android.database.sensor.SensorSettingType
 import io.homeassistant.companion.android.database.sensor.toSensorWithAttributes
 import io.homeassistant.companion.android.location.HighAccuracyLocationService
 import io.homeassistant.companion.android.notifications.MessagingManager
+import io.homeassistant.companion.android.themes.ThemesManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.IOException
 import java.util.Locale
+import javax.inject.Inject
 import io.homeassistant.companion.android.common.R as commonR
 
 var lastTime = 0L
@@ -55,6 +58,9 @@ var lastTime3 = 0L
 
 @AndroidEntryPoint
 class LocationSensorManager : LocationSensorManagerBase() {
+
+    @Inject
+    lateinit var wifiHelper: WifiHelperImpl
 
     companion object {
         private const val SETTING_SEND_LOCATION_AS = "location_send_as"
@@ -729,7 +735,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
         }
         Log.d(TAG, "Registering for location updates.")
         val amapKey = latestContext.getSharedPreferences("config", Context.MODE_PRIVATE)
-            .getString("amapKey","")
+            .getString("amapKey", "")
         if (amapKey.isNullOrEmpty() || amapKey == "0") {
             getLocation(latestContext, amapKey == "0")
         } else {
@@ -764,12 +770,14 @@ class LocationSensorManager : LocationSensorManagerBase() {
 
     }
 
-    private fun getLocation(context: Context, onlyGps: Boolean) {
+    private fun getLocation(context: Context, wifi: Boolean) {
+        if (wifiHelper.isUsingWifi() && wifi) return
         val locationManager =
             context.getSystemService(LOCATION_SERVICE) as LocationManager
 
         if (lastTime != 0L && System.currentTimeMillis() - lastTime < 30000) return
         lastTime = System.currentTimeMillis()
+
 
         locationManager.requestLocationUpdates(
             LocationManager.GPS_PROVIDER,
@@ -777,6 +785,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
             5f,
             object : LocationListener {
                 override fun onLocationChanged(it: Location) {
+                    if (wifiHelper.isUsingWifi() && wifi) return
                     runBlocking {
                         getEnabledServers(
                             latestContext,
@@ -795,13 +804,14 @@ class LocationSensorManager : LocationSensorManagerBase() {
             }, Looper.getMainLooper()
         )
 
-        if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 > 180000 && !onlyGps) {
+        if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 > 180000) {
             locationManager.requestLocationUpdates(
                 LocationManager.NETWORK_PROVIDER,
                 180000,
                 5f,
                 object : LocationListener {
                     override fun onLocationChanged(it: Location) {
+                        if (wifiHelper.isUsingWifi() && wifi) return
                         if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 < 180000) return
                         runBlocking {
                             getEnabledServers(

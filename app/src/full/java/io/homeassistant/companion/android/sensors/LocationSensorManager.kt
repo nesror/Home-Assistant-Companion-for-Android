@@ -729,9 +729,9 @@ class LocationSensorManager : LocationSensorManagerBase() {
         }
         Log.d(TAG, "Registering for location updates.")
         val amapKey = latestContext.getSharedPreferences("config", Context.MODE_PRIVATE)
-            .getString("amapKey", null)
-        if (amapKey.isNullOrEmpty()) {
-            getLocation(latestContext)
+            .getString("amapKey","")
+        if (amapKey.isNullOrEmpty() || amapKey == "0") {
+            getLocation(latestContext, amapKey == "0")
         } else {
             AMapLocationClient.updatePrivacyShow(latestContext, true, true)
             AMapLocationClient.updatePrivacyAgree(latestContext, true)
@@ -764,7 +764,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
 
     }
 
-    private fun getLocation(context: Context) {
+    private fun getLocation(context: Context, onlyGps: Boolean) {
         val locationManager =
             context.getSystemService(LOCATION_SERVICE) as LocationManager
 
@@ -795,7 +795,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
             }, Looper.getMainLooper()
         )
 
-        if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 > 180000) {
+        if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 > 180000 && !onlyGps) {
             locationManager.requestLocationUpdates(
                 LocationManager.NETWORK_PROVIDER,
                 180000,
@@ -876,6 +876,11 @@ class LocationSensorManager : LocationSensorManagerBase() {
             mapOf(
                 "Latitude" to address.latitude,
                 "Longitude" to address.longitude,
+                "AdministrativeArea" to address.adminArea,
+                "Country" to address.countryName,
+                "CountryCode" to address.countryCode,
+                "SubLocality" to address.subLocality,
+                "Thoroughfare" to address.thoroughfare,
             )
         )
     }

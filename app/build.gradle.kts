@@ -89,14 +89,14 @@ android {
         named("debug").configure {
             // applicationIdSuffix = ".debug"
             signingConfig = signingConfigs.getByName("release")
-            manifestPlaceholders["amapkey"] = AMAP_KEY
+            //manifestPlaceholders["amapkey"] = AMAP_KEY
             manifestPlaceholders["pgy_api_key"] = PGY_API_KEY
         }
         named("release").configure {
             isDebuggable = false
             isJniDebuggable = false
             signingConfig = signingConfigs.getByName("release")
-            manifestPlaceholders["amapkey"] = AMAP_KEY
+            //manifestPlaceholders["amapkey"] = AMAP_KEY
             manifestPlaceholders["pgy_api_key"] = PGY_API_KEY
         }
     }

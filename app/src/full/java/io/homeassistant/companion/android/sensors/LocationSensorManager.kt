@@ -5,19 +5,18 @@ import android.app.PendingIntent
 import android.bluetooth.BluetoothAdapter
 import android.content.Context
 import android.content.Context.LOCATION_SERVICE
+import android.content.Context.WIFI_SERVICE
 import android.content.Intent
 import android.location.Address
 import android.location.Geocoder
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
-import android.location.LocationProvider
+import android.net.wifi.WifiManager
 import android.os.Build
-import android.os.Bundle
 import android.os.Looper
 import android.text.TextUtils
 import android.util.Log
-import androidx.annotation.RequiresApi
 import com.amap.api.location.AMapLocation
 import com.amap.api.location.AMapLocationClient
 import com.amap.api.location.AMapLocationClientOption
@@ -29,7 +28,6 @@ import io.homeassistant.companion.android.common.data.integration.Entity
 import io.homeassistant.companion.android.common.data.integration.UpdateLocation
 import io.homeassistant.companion.android.common.data.integration.ZoneAttributes
 import io.homeassistant.companion.android.common.data.integration.containsWithAccuracy
-import io.homeassistant.companion.android.common.data.wifi.WifiHelperImpl
 import io.homeassistant.companion.android.common.notifications.DeviceCommandData
 import io.homeassistant.companion.android.common.sensors.LocationSensorManagerBase
 import io.homeassistant.companion.android.common.sensors.SensorManager
@@ -42,15 +40,14 @@ import io.homeassistant.companion.android.database.sensor.SensorSettingType
 import io.homeassistant.companion.android.database.sensor.toSensorWithAttributes
 import io.homeassistant.companion.android.location.HighAccuracyLocationService
 import io.homeassistant.companion.android.notifications.MessagingManager
-import io.homeassistant.companion.android.themes.ThemesManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.IOException
 import java.util.Locale
-import javax.inject.Inject
 import io.homeassistant.companion.android.common.R as commonR
+
 
 var lastTime = 0L
 var lastTime2 = 0L
@@ -58,9 +55,6 @@ var lastTime3 = 0L
 
 @AndroidEntryPoint
 class LocationSensorManager : LocationSensorManagerBase() {
-
-    @Inject
-    lateinit var wifiHelper: WifiHelperImpl
 
     companion object {
         private const val SETTING_SEND_LOCATION_AS = "location_send_as"
@@ -787,8 +781,8 @@ class LocationSensorManager : LocationSensorManagerBase() {
             5f,
             object : LocationListener {
                 override fun onLocationChanged(it: Location) {
-                    if(canCloseGps>2)return
                     checkGps(wifi)
+                    if(canCloseGps>2)return
                     runBlocking {
                         getEnabledServers(
                             latestContext,
@@ -807,7 +801,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
             }, Looper.getMainLooper()
         )
 
-        if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 > 180000 && wifiHelper.isUsingWifi() && wifi) {
+        if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 > 180000 && canCloseGps>0) {
             locationManager.requestLocationUpdates(
                 LocationManager.NETWORK_PROVIDER,
                 180000,
@@ -815,7 +809,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
                 object : LocationListener {
                     override fun onLocationChanged(it: Location) {
                         checkGps(wifi)
-                        if(canCloseGps>2) return
+                        if(canCloseGps>0) return
                         if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 < 180000) return
                         runBlocking {
                             getEnabledServers(
@@ -856,11 +850,17 @@ class LocationSensorManager : LocationSensorManagerBase() {
     }
 
     private fun checkGps(wifi: Boolean) {
-        if (wifiHelper.isUsingWifi() && wifi) {
+        if (isUsingWifi() && wifi) {
             canCloseGps++
         } else {
             canCloseGps = 0
         }
+    }
+
+    private fun isUsingWifi(): Boolean {
+        val wifiManager = latestContext.getSystemService(WIFI_SERVICE) as WifiManager
+        val wifiInfo = wifiManager.connectionInfo
+        return wifiManager.isWifiEnabled && wifiInfo.ssid.replace("\"", "").isEmpty()
     }
 
     private fun getGeocodedLocation(it: Location) {

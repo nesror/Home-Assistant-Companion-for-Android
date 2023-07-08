@@ -770,8 +770,10 @@ class LocationSensorManager : LocationSensorManagerBase() {
 
     }
 
+    var canCloseGps = 0
     private fun getLocation(context: Context, wifi: Boolean) {
-        if (wifiHelper.isUsingWifi() && wifi) return
+        checkGps(wifi)
+        if(canCloseGps>2)return
         val locationManager =
             context.getSystemService(LOCATION_SERVICE) as LocationManager
 
@@ -785,7 +787,8 @@ class LocationSensorManager : LocationSensorManagerBase() {
             5f,
             object : LocationListener {
                 override fun onLocationChanged(it: Location) {
-                    if (wifiHelper.isUsingWifi() && wifi) return
+                    if(canCloseGps>2)return
+                    checkGps(wifi)
                     runBlocking {
                         getEnabledServers(
                             latestContext,
@@ -804,14 +807,15 @@ class LocationSensorManager : LocationSensorManagerBase() {
             }, Looper.getMainLooper()
         )
 
-        if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 > 180000 && !wifi) {
+        if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 > 180000 && wifiHelper.isUsingWifi() && wifi) {
             locationManager.requestLocationUpdates(
                 LocationManager.NETWORK_PROVIDER,
                 180000,
                 5f,
                 object : LocationListener {
                     override fun onLocationChanged(it: Location) {
-                        if (wifi) return
+                        checkGps(wifi)
+                        if(canCloseGps>2) return
                         if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 < 180000) return
                         runBlocking {
                             getEnabledServers(
@@ -849,6 +853,14 @@ class LocationSensorManager : LocationSensorManagerBase() {
         // return locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
         // 网络定位
         //return locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+    }
+
+    private fun checkGps(wifi: Boolean) {
+        if (wifiHelper.isUsingWifi() && wifi) {
+            canCloseGps++
+        } else {
+            canCloseGps = 0
+        }
     }
 
     private fun getGeocodedLocation(it: Location) {

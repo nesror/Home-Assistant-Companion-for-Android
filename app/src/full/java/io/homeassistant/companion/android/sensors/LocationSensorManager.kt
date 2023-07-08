@@ -860,7 +860,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
     private fun isUsingWifi(): Boolean {
         val wifiManager = latestContext.getSystemService(WIFI_SERVICE) as WifiManager
         val wifiInfo = wifiManager.connectionInfo
-        return wifiManager.isWifiEnabled && wifiInfo.ssid.replace("\"", "").isEmpty()
+        return wifiManager.isWifiEnabled && wifiInfo.ssid.replace("\"", "").isNotEmpty()
     }
 
     private fun getGeocodedLocation(it: Location) {

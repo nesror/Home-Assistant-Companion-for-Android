@@ -804,14 +804,14 @@ class LocationSensorManager : LocationSensorManagerBase() {
             }, Looper.getMainLooper()
         )
 
-        if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 > 180000) {
+        if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 > 180000 && !wifi) {
             locationManager.requestLocationUpdates(
                 LocationManager.NETWORK_PROVIDER,
                 180000,
                 5f,
                 object : LocationListener {
                     override fun onLocationChanged(it: Location) {
-                        if (wifiHelper.isUsingWifi() && wifi) return
+                        if (wifi) return
                         if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 < 180000) return
                         runBlocking {
                             getEnabledServers(
@@ -889,6 +889,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
                 "AdministrativeArea" to address.adminArea,
                 "Country" to address.countryName,
                 "CountryCode" to address.countryCode,
+                "Locality" to address.locality,
                 "SubLocality" to address.subLocality,
                 "Thoroughfare" to address.thoroughfare,
             )

@@ -801,7 +801,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
             }, Looper.getMainLooper()
         )
 
-        if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 > 180000 && canCloseGps>0) {
+        if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 > 180000 && canCloseGps>1) {
             locationManager.requestLocationUpdates(
                 LocationManager.NETWORK_PROVIDER,
                 180000,
@@ -809,7 +809,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
                 object : LocationListener {
                     override fun onLocationChanged(it: Location) {
                         checkGps(wifi)
-                        if(canCloseGps>0) return
+                        if(canCloseGps>1) return
                         if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 < 180000) return
                         runBlocking {
                             getEnabledServers(

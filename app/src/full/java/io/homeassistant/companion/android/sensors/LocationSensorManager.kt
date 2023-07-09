@@ -800,7 +800,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
             }, Looper.getMainLooper()
         )
 
-        if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 > 180000 && canCloseGps>1) {
+        if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 > 180000 && canCloseGps<2) {
             locationManager.requestLocationUpdates(
                 LocationManager.NETWORK_PROVIDER,
                 180000,

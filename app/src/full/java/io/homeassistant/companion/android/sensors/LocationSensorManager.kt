@@ -766,14 +766,13 @@ class LocationSensorManager : LocationSensorManagerBase() {
 
     var canCloseGps = 0
     private fun getLocation(context: Context, wifi: Boolean) {
-        checkGps(wifi)
-        if(canCloseGps>2)return
         val locationManager =
             context.getSystemService(LOCATION_SERVICE) as LocationManager
 
         if (lastTime != 0L && System.currentTimeMillis() - lastTime < 30000) return
         lastTime = System.currentTimeMillis()
-
+        checkGps(wifi)
+        if(canCloseGps>5)return
 
         locationManager.requestLocationUpdates(
             LocationManager.GPS_PROVIDER,

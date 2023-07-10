@@ -772,7 +772,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
         if (lastTime != 0L && System.currentTimeMillis() - lastTime < 30000) return
         lastTime = System.currentTimeMillis()
         checkGps(wifi)
-        if(canCloseGps>5)return
+        if (canCloseGps > 5) return
 
         locationManager.requestLocationUpdates(
             LocationManager.GPS_PROVIDER,
@@ -781,7 +781,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
             object : LocationListener {
                 override fun onLocationChanged(it: Location) {
                     checkGps(wifi)
-                    if(canCloseGps>2)return
+                    if (canCloseGps > 2) return
                     runBlocking {
                         getEnabledServers(
                             latestContext,
@@ -800,7 +800,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
             }, Looper.getMainLooper()
         )
 
-        if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 > 180000 && canCloseGps<2) {
+        if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 > 180000 && canCloseGps < 2) {
             locationManager.requestLocationUpdates(
                 LocationManager.NETWORK_PROVIDER,
                 180000,
@@ -808,14 +808,14 @@ class LocationSensorManager : LocationSensorManagerBase() {
                 object : LocationListener {
                     override fun onLocationChanged(it: Location) {
                         checkGps(wifi)
-                        if(canCloseGps>1) return
+                        if (canCloseGps > 1) return
                         if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 < 180000) return
                         runBlocking {
                             getEnabledServers(
                                 latestContext,
                                 singleAccurateLocation
                             ).forEach { serverId ->
-                                sendLocationUpdate(it, serverId)
+                                sendLocationUpdate(it, serverId, true)
                             }
                         }
                         if (lastTime3 != 0L && System.currentTimeMillis() - lastTime3 < 180000) return
@@ -859,7 +859,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
     private fun isUsingWifi(): Boolean {
         val wifiManager = latestContext.getSystemService(WIFI_SERVICE) as WifiManager
         val wifiInfo = wifiManager.connectionInfo
-        if(wifiInfo.ssid.equals("<unknown ssid>")) return false
+        if (wifiInfo.ssid.equals("<unknown ssid>")) return false
         return wifiManager.isWifiEnabled && wifiInfo.ssid.replace("\"", "").isNotEmpty()
     }
 
@@ -935,7 +935,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
     private fun sendLocationUpdate(
         location: Location,
         serverId: Int,
-        geofenceUpdate: Boolean = false,
+        ignoreAccuracy: Boolean = false,
     ) {
         Log.d(
             TAG,
@@ -945,7 +945,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
                     "\nBearing: ${location.bearing}"
         )
         var accuracy = 0
-        if (location.accuracy.toInt() >= 0) {
+        if (location.accuracy.toInt() >= 0 && !ignoreAccuracy) {
             accuracy = location.accuracy.toInt()
             if (accuracy > 25) return
         }
@@ -1013,7 +1013,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
                     return
                 }
             } else {
-                if (now < lastLocationSend + 5000 && !geofenceUpdate && !highAccuracyModeEnabled) {
+                if (now < lastLocationSend + 5000 && !highAccuracyModeEnabled) {
                     Log.d(
                         TAG,
                         "New location update not possible within 5 seconds, not sending to HA"

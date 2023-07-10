@@ -771,6 +771,8 @@ class LocationSensorManager : LocationSensorManagerBase() {
 
         if (lastTime != 0L && System.currentTimeMillis() - lastTime < 30000) return
         lastTime = System.currentTimeMillis()
+        canCloseGps = latestContext.getSharedPreferences("config", Context.MODE_PRIVATE)
+            .getInt("canCloseGps", 0)
         checkGps(wifi)
         if (canCloseGps > 5) return
 
@@ -854,6 +856,8 @@ class LocationSensorManager : LocationSensorManagerBase() {
         } else {
             canCloseGps = 0
         }
+        latestContext.getSharedPreferences("config", Context.MODE_PRIVATE).edit()
+            .putInt("canCloseGps", canCloseGps).apply()
     }
 
     private fun isUsingWifi(): Boolean {

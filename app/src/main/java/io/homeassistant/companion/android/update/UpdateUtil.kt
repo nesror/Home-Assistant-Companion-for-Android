@@ -16,6 +16,8 @@ import android.widget.Toast
 import androidx.core.content.FileProvider
 import io.homeassistant.companion.android.BuildConfig
 import io.homeassistant.companion.android.util.getAppMetaDataString
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import okhttp3.*
 import org.json.JSONObject
 import java.io.File
@@ -93,22 +95,27 @@ object UpdateUtil {
     }
 
     private fun githubCheckNew(context: Activity, okHttpClient: OkHttpClient) {
-        Toast.makeText(
-            context,
-            "次数用尽检查更新失败，尝试备用更新，推荐关注公众号：UnknownExceptions 回复最新版进行更新",
-            Toast.LENGTH_SHORT
-        ).show()
+        runBlocking(Dispatchers.Main) {
+            Toast.makeText(
+                context,
+                "次数用尽检查更新失败，尝试备用更新，推荐关注公众号：UnknownExceptions 回复最新版进行更新",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+
         val request = Request.Builder().apply {
             url("https://github.com/nesror/Home-Assistant-Companion-for-Android/releases/latest")
         }.build()
         okHttpClient.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 Log.e("checkNew==>", e.toString())
-                Toast.makeText(
-                    context,
-                    "有新版本了！",
-                    Toast.LENGTH_SHORT
-                ).show()
+                runBlocking(Dispatchers.Main) {
+                    Toast.makeText(
+                        context,
+                        "有新版本了！",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
 
             override fun onResponse(call: Call, response: Response) {

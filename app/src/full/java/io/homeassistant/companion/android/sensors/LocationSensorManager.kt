@@ -12,11 +12,15 @@ import android.location.Geocoder
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Looper
 import android.text.TextUtils
 import android.util.Log
+import androidx.annotation.RequiresApi
+import androidx.work.impl.utils.getActiveNetworkCompat
 import com.amap.api.location.AMapLocation
 import com.amap.api.location.AMapLocationClient
 import com.amap.api.location.AMapLocationClientOption
@@ -27,7 +31,6 @@ import io.homeassistant.companion.android.common.bluetooth.BluetoothUtils
 import io.homeassistant.companion.android.common.data.integration.Entity
 import io.homeassistant.companion.android.common.data.integration.UpdateLocation
 import io.homeassistant.companion.android.common.data.integration.ZoneAttributes
-import io.homeassistant.companion.android.common.data.integration.containsWithAccuracy
 import io.homeassistant.companion.android.common.notifications.DeviceCommandData
 import io.homeassistant.companion.android.common.sensors.LocationSensorManagerBase
 import io.homeassistant.companion.android.common.sensors.SensorManager
@@ -860,14 +863,29 @@ class LocationSensorManager : LocationSensorManagerBase() {
             .putInt("canCloseGps", canCloseGps).apply()
     }
 
-    private var lastWifiName = ""
     private fun isUsingWifi(): Boolean {
-        val wifiManager = latestContext.getSystemService(WIFI_SERVICE) as WifiManager
-        val wifiInfo = wifiManager.connectionInfo
-        lastWifiName = wifiInfo.ssid.replace("\"", "")
-        if (lastWifiName == "<unknown ssid>") return false
-        return wifiManager.isWifiEnabled && lastWifiName.isNotEmpty()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            return isWifiQ29()
+        }
+        return isWifi()
     }
+
+    private fun isWifi(): Boolean {
+        val cm = latestContext
+            .getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        return cm.activeNetworkInfo?.type == ConnectivityManager.TYPE_WIFI
+    }
+
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    private fun isWifiQ29(): Boolean {
+        val cm = latestContext
+            .getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = cm.activeNetwork ?: return false
+        val capabilities = cm.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+    }
+
 
     private fun getGeocodedLocation(it: Location) {
         try {
@@ -909,8 +927,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
                 "CountryCode" to address.countryCode,
                 "Locality" to address.locality,
                 "SubLocality" to address.subLocality,
-                "Thoroughfare" to address.thoroughfare,
-                "LastWifiName" to lastWifiName,
+                "Thoroughfare" to address.thoroughfare
             )
         )
     }
@@ -990,32 +1007,32 @@ class LocationSensorManager : LocationSensorManagerBase() {
             return
         }
 
-        if (now - location.time < 320000) {
-            Log.d(
-                TAG,
-                "Received location that is ${now - location.time} milliseconds old, ${location.time} compared to $now with source ${location.provider}"
-            )
-            if (lastUpdateLocation == updateLocationString) {
-                if (now < lastLocationSend + 900000) {
-                    Log.d(TAG, "Duplicate location received, not sending to HA")
-                    return
-                }
-            } else {
-                if (now < lastLocationSend + 5000 && !highAccuracyModeEnabled) {
-                    Log.d(
-                        TAG,
-                        "New location update not possible within 5 seconds, not sending to HA"
-                    )
-                    return
-                }
-            }
-        } else {
-            Log.d(
-                TAG,
-                "Skipping location update due to old timestamp ${location.time} compared to $now"
-            )
-            return
-        }
+//        if (now - location.time < 320000) {
+//            Log.d(
+//                TAG,
+//                "Received location that is ${now - location.time} milliseconds old, ${location.time} compared to $now with source ${location.provider}"
+//            )
+//            if (lastUpdateLocation == updateLocationString) {
+//                if (now < lastLocationSend + 900000) {
+//                    Log.d(TAG, "Duplicate location received, not sending to HA")
+//                    return
+//                }
+//            } else {
+//                if (now < lastLocationSend + 5000 && !highAccuracyModeEnabled) {
+//                    Log.d(
+//                        TAG,
+//                        "New location update not possible within 5 seconds, not sending to HA"
+//                    )
+//                    return
+//                }
+//            }
+//        } else {
+//            Log.d(
+//                TAG,
+//                "Skipping location update due to old timestamp ${location.time} compared to $now"
+//            )
+//            return
+//        }
         lastLocationSend = now
         lastUpdateLocation = updateLocationString
 

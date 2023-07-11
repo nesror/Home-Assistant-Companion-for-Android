@@ -860,11 +860,13 @@ class LocationSensorManager : LocationSensorManagerBase() {
             .putInt("canCloseGps", canCloseGps).apply()
     }
 
+    private var lastWifiName = ""
     private fun isUsingWifi(): Boolean {
         val wifiManager = latestContext.getSystemService(WIFI_SERVICE) as WifiManager
         val wifiInfo = wifiManager.connectionInfo
-        if (wifiInfo.ssid.equals("<unknown ssid>")) return false
-        return wifiManager.isWifiEnabled && wifiInfo.ssid.replace("\"", "").isNotEmpty()
+        lastWifiName = wifiInfo.ssid.replace("\"", "")
+        if (lastWifiName == "<unknown ssid>") return false
+        return wifiManager.isWifiEnabled && lastWifiName.isNotEmpty()
     }
 
     private fun getGeocodedLocation(it: Location) {
@@ -908,6 +910,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
                 "Locality" to address.locality,
                 "SubLocality" to address.subLocality,
                 "Thoroughfare" to address.thoroughfare,
+                "LastWifiName" to lastWifiName,
             )
         )
     }
@@ -954,37 +957,18 @@ class LocationSensorManager : LocationSensorManagerBase() {
             if (accuracy > 25) return
         }
         val updateLocation: UpdateLocation
-        val updateLocationAs: String
         val updateLocationString: String
         runBlocking {
-            updateLocationAs = getSendLocationAsSetting(serverId)
-            if (updateLocationAs == SEND_LOCATION_AS_ZONE_ONLY) {
-                // val zones = getZones(serverId)
-                val locationZone = zones
-                    .filter { !it.attributes.passive && it.containsWithAccuracy(location) }
-                    .minByOrNull { it.attributes.radius }
-                updateLocation = UpdateLocation(
-                    gps = null,
-                    gpsAccuracy = null,
-                    locationName = locationZone?.entityId?.split(".")?.get(1) ?: ZONE_NAME_NOT_HOME,
-                    speed = null,
-                    altitude = null,
-                    course = null,
-                    verticalAccuracy = null
-                )
-                updateLocationString = updateLocation.locationName!!
-            } else {
-                updateLocation = UpdateLocation(
-                    gps = arrayOf(location.latitude, location.longitude),
-                    gpsAccuracy = accuracy,
-                    locationName = null,
-                    speed = location.speed.toInt(),
-                    altitude = location.altitude.toInt(),
-                    course = location.bearing.toInt(),
-                    verticalAccuracy = if (Build.VERSION.SDK_INT >= 26) location.verticalAccuracyMeters.toInt() else 0
-                )
-                updateLocationString = updateLocation.gps.contentToString()
-            }
+            updateLocation = UpdateLocation(
+                gps = arrayOf(location.latitude, location.longitude),
+                gpsAccuracy = accuracy,
+                locationName = null,
+                speed = location.speed.toInt(),
+                altitude = location.altitude.toInt(),
+                course = location.bearing.toInt(),
+                verticalAccuracy = if (Build.VERSION.SDK_INT >= 26) location.verticalAccuracyMeters.toInt() else 0
+            )
+            updateLocationString = updateLocation.gps.contentToString()
         }
 
         val now = System.currentTimeMillis()
@@ -1046,8 +1030,6 @@ class LocationSensorManager : LocationSensorManagerBase() {
         ioScope.launch {
             try {
                 serverManager.integrationRepository(serverId).updateLocation(updateLocation)
-                Log.d(TAG, "Location update sent successfully for $serverId as $updateLocationAs")
-
                 // Update Geocoded Location Sensor
                 if (geocodeIncludeLocation) {
                     val intent = Intent(latestContext, SensorReceiver::class.java)

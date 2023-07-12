@@ -13,6 +13,7 @@ plugins {
     id("com.google.gms.google-services")
     kotlin("kapt")
     id("dagger.hilt.android.plugin")
+    id("com.google.firebase.crashlytics")
 }
 
 android {
@@ -66,12 +67,8 @@ android {
         groups = "continuous-deployment"
     }
 
-//    val NESTOR_KEYSTORE_PASSWORD: String by project
-//    val NESTOR_KEYSTORE_ALIAS: String by project
-//    val AMAP_KEY: String by project
     val NESTOR_KEYSTORE_PASSWORD = System.getenv("NESTOR_KEYSTORE_PASSWORD")
     val NESTOR_KEYSTORE_ALIAS = System.getenv("NESTOR_KEYSTORE_ALIAS")
-    val AMAP_KEY = System.getenv("AMAP_KEY")
     val PGY_API_KEY = System.getenv("PGY_API_KEY")
 
     signingConfigs {
@@ -87,16 +84,13 @@ android {
 
     buildTypes {
         named("debug").configure {
-            // applicationIdSuffix = ".debug"
             signingConfig = signingConfigs.getByName("release")
-            //manifestPlaceholders["amapkey"] = AMAP_KEY
             manifestPlaceholders["pgy_api_key"] = PGY_API_KEY
         }
         named("release").configure {
             isDebuggable = false
             isJniDebuggable = false
             signingConfig = signingConfigs.getByName("release")
-            //manifestPlaceholders["amapkey"] = AMAP_KEY
             manifestPlaceholders["pgy_api_key"] = PGY_API_KEY
         }
     }
@@ -191,6 +185,7 @@ dependencies {
     "fullImplementation"(platform("com.google.firebase:firebase-bom:32.1.0"))
     "fullImplementation"("com.google.firebase:firebase-messaging")
     "fullImplementation"("io.sentry:sentry-android:6.23.0")
+    "fullImplementation"("com.google.firebase:firebase-crashlytics-ktx")
     "fullImplementation"("com.google.firebase:firebase-analytics")
     "fullImplementation"("com.google.android.gms:play-services-wearable:18.0.0")
     "fullImplementation"("androidx.wear:wear-remote-interactions:1.0.0")

@@ -969,9 +969,9 @@ class LocationSensorManager : LocationSensorManagerBase() {
                     "\nBearing: ${location.bearing}"
         )
         var accuracy = 0
-        if (location.accuracy.toInt() >= 0 && !ignoreAccuracy) {
+        if (location.accuracy.toInt() >= 0) {
             accuracy = location.accuracy.toInt()
-            if (accuracy > 25) return
+            if (accuracy > 25 && !ignoreAccuracy) return
         }
         val updateLocation: UpdateLocation
         val updateLocationString: String

@@ -913,7 +913,10 @@ class LocationSensorManager : LocationSensorManagerBase() {
     }
 
     private fun sendGeocodedLocation(address: Address) {
-        val mAddressLine: String = address.getAddressLine(0)
+        var mAddressLine: String? = address.getAddressLine(0)
+        if (mAddressLine.isNullOrEmpty()) {
+            mAddressLine = address.countryName + address.locality + address.subLocality + address.thoroughfare
+        }
         onSensorUpdated(
             latestContext,
             GeocodeSensorManager.geocodedLocation,

@@ -134,7 +134,9 @@ class SettingsFragment(
         }
         findPreference<Preference>("amapKey")?.setOnPreferenceClickListener {
             //Toast.makeText(context, "DOTO", Toast.LENGTH_SHORT).show()
+            val amapKey = context?.getSharedPreferences("config", Context.MODE_PRIVATE)?.getString("amapKey", "")
             val editText = EditText(requireActivity())
+            editText.setText(amapKey)
             val editDialog = AlertDialog.Builder(requireActivity())
             editDialog.setTitle("你自己的高德地图Android Key").setView(editText)
             editDialog.setMessage("换回直接调用系统gps请清空后点击确定\n不建议使用，新版本不使用高德也已经可以获取地理位置信息了\n不保证可用，高德可能会封包名\n包名：io.homeassistant.companion.android\nHSA1: 52:7D:B7:46:44:F9:BB:AE:B5:7F:B1:07:78:AC:AE:58:B3:A4:30:56\n")

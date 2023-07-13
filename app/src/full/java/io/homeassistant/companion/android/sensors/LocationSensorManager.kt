@@ -776,7 +776,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
         canCloseGps = latestContext.getSharedPreferences("config", Context.MODE_PRIVATE)
             .getInt("canCloseGps", 0)
         checkGps(wifi)
-        if (canCloseGps > 5) return
+        if (canCloseGps > 10) return
 
         locationManager.requestLocationUpdates(
             LocationManager.GPS_PROVIDER,
@@ -965,11 +965,9 @@ class LocationSensorManager : LocationSensorManagerBase() {
         var accuracy = 0
         if (location.accuracy.toInt() >= 0) {
             accuracy = location.accuracy.toInt()
-            if (accuracy > 35 && !ignoreAccuracy) return
+            if (accuracy > 35 && !ignoreAccuracy && canCloseGps < 2) return
         }
-        lastTime2 = System.currentTimeMillis()
-        getGeocodedLocation(location)
-        checkGps(wifi)
+
         val updateLocation: UpdateLocation
         val updateLocationString: String
         runBlocking {
@@ -1032,6 +1030,9 @@ class LocationSensorManager : LocationSensorManagerBase() {
 //        }
         lastLocationSend = now
         lastUpdateLocation = updateLocationString
+        lastTime2 = System.currentTimeMillis()
+        getGeocodedLocation(location)
+        checkGps(wifi)
 
         val geocodeIncludeLocation = getSetting(
             latestContext,

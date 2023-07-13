@@ -798,24 +798,24 @@ class LocationSensorManager : LocationSensorManagerBase() {
             }, Looper.getMainLooper()
         )
 
-//        if (lastTime2 == 0L) {
-//            lastTime2 = System.currentTimeMillis()
-//        }
-//        if (System.currentTimeMillis() - lastTime2 > 180000 && canCloseGps < 2) {
-//            locationManager.requestSingleUpdate (
-//                LocationManager.NETWORK_PROVIDER,
-//                {
-//                    runBlocking {
-//                        getEnabledServers(
-//                            latestContext,
-//                            singleAccurateLocation
-//                        ).forEach { serverId ->
-//                            sendLocationUpdate(it, serverId, wifi, true)
-//                        }
-//                    }
-//                }, Looper.getMainLooper()
-//            )
-//        }
+        if (lastTime2 == 0L) {
+            lastTime2 = System.currentTimeMillis()
+        }
+        if (System.currentTimeMillis() - lastTime2 > 180000 && canCloseGps < 2) {
+            locationManager.requestSingleUpdate (
+                LocationManager.NETWORK_PROVIDER,
+                {
+                    runBlocking {
+                        getEnabledServers(
+                            latestContext,
+                            singleAccurateLocation
+                        ).forEach { serverId ->
+                            sendLocationUpdate(it, serverId, wifi, true)
+                        }
+                    }
+                }, Looper.getMainLooper()
+            )
+        }
 
         runBlocking {
             locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)

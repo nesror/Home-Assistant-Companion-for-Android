@@ -382,7 +382,10 @@ class IntegrationRepositoryImpl @AssistedInject constructor(
         val sessionExpired = currentMillis > sessionExpireMillis
         val appLocked = lockEnabled && !appActive && sessionExpired
 
-        Log.d(TAG, "isAppLocked(): $appLocked. (LockEnabled: $lockEnabled, appActive: $appActive, expireMillis: $sessionExpireMillis, currentMillis: $currentMillis)")
+        Log.d(
+            TAG,
+            "isAppLocked(): $appLocked. (LockEnabled: $lockEnabled, appActive: $appActive, expireMillis: $sessionExpireMillis, currentMillis: $currentMillis)"
+        )
         return appLocked
     }
 
@@ -543,9 +546,12 @@ class IntegrationRepositoryImpl @AssistedInject constructor(
                         when (it.type) {
                             AssistPipelineEventType.INTENT_END ->
                                 cont.resume((it.data as AssistPipelineIntentEnd).intentOutput.response.speech.plain["speech"])
+
                             AssistPipelineEventType.ERROR,
                             AssistPipelineEventType.RUN_END -> cont.resume(null)
-                            else -> { /* Do nothing */ }
+
+                            else -> { /* Do nothing */
+                            }
                         }
                     } ?: cont.resume(null)
                 }
@@ -737,7 +743,10 @@ class IntegrationRepositoryImpl @AssistedInject constructor(
         val current = System.currentTimeMillis()
         val next = localStorage.getLong("${serverId}_$PREF_SEC_WARNING_NEXT") ?: 0
         return if (current > next) {
-            localStorage.putLong("${serverId}_$PREF_SEC_WARNING_NEXT", current + (86400000)) // 24 hours
+            localStorage.putLong(
+                "${serverId}_$PREF_SEC_WARNING_NEXT",
+                current + (86400000)
+            ) // 24 hours
             true
         } else {
             false
@@ -748,7 +757,8 @@ class IntegrationRepositoryImpl @AssistedInject constructor(
         val oldDeviceRegistration = getRegistration()
         val pushToken = deviceRegistration.pushToken ?: oldDeviceRegistration.pushToken
 
-        val appData = mutableMapOf<String, Any>("push_websocket_channel" to deviceRegistration.pushWebsocket)
+        val appData =
+            mutableMapOf<String, Any>("push_websocket_channel" to deviceRegistration.pushWebsocket)
         if (!pushToken.isNullOrBlank()) {
             appData["push_url"] = PUSH_URL
             appData["push_token"] = pushToken
@@ -779,7 +789,9 @@ class IntegrationRepositoryImpl @AssistedInject constructor(
                 updateLocation.speed,
                 updateLocation.altitude,
                 updateLocation.course,
-                updateLocation.verticalAccuracy
+                updateLocation.verticalAccuracy,
+                updateLocation.time,
+                updateLocation.gpsTime
             )
         )
     }

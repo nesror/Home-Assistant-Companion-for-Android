@@ -777,6 +777,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
             .getInt("canCloseGps", 0)
         checkGps(wifi)
         if (canCloseGps > 10) return
+        lastTime2 = System.currentTimeMillis()
 
         locationManager.requestLocationUpdates(
             LocationManager.GPS_PROVIDER,
@@ -798,9 +799,6 @@ class LocationSensorManager : LocationSensorManagerBase() {
             }, Looper.getMainLooper()
         )
 
-        if (lastTime2 == 0L) {
-            lastTime2 = System.currentTimeMillis()
-        }
         if (System.currentTimeMillis() - lastTime2 > 180000 && canCloseGps < 2) {
             locationManager.requestSingleUpdate(
                 LocationManager.NETWORK_PROVIDER,

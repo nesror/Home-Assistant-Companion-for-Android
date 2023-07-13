@@ -802,7 +802,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
             lastTime2 = System.currentTimeMillis()
         }
         if (System.currentTimeMillis() - lastTime2 > 180000 && canCloseGps < 2) {
-            locationManager.requestSingleUpdate (
+            locationManager.requestSingleUpdate(
                 LocationManager.NETWORK_PROVIDER,
                 {
                     runBlocking {
@@ -962,6 +962,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
             accuracy = location.accuracy.toInt()
             if (accuracy > 35 && !ignoreAccuracy && canCloseGps < 2) return
         }
+        val now = System.currentTimeMillis()
 
         val updateLocation: UpdateLocation
         val updateLocationString: String
@@ -973,12 +974,13 @@ class LocationSensorManager : LocationSensorManagerBase() {
                 speed = location.speed.toInt(),
                 altitude = location.altitude.toInt(),
                 course = location.bearing.toInt(),
-                verticalAccuracy = if (Build.VERSION.SDK_INT >= 26) location.verticalAccuracyMeters.toInt() else 0
+                verticalAccuracy = if (Build.VERSION.SDK_INT >= 26) location.verticalAccuracyMeters.toInt() else 0,
+                time = now,
+                gpsTime = location.time,
             )
             updateLocationString = updateLocation.gps.contentToString()
         }
 
-        val now = System.currentTimeMillis()
 
 //        Log.d(TAG, "Begin evaluating if location update should be skipped")
 //        if (now + 5000 < location.time && !highAccuracyModeEnabled) {

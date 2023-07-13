@@ -54,7 +54,6 @@ import io.homeassistant.companion.android.common.R as commonR
 
 var lastTime = 0L
 var lastTime2 = 0L
-var lastTime3 = 0L
 
 @AndroidEntryPoint
 class LocationSensorManager : LocationSensorManagerBase() {
@@ -240,7 +239,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
                 location.longitude = hm["lon"]!!
                 runBlocking {
                     getEnabledServers(latestContext, singleAccurateLocation).forEach { serverId ->
-                        sendLocationUpdate(location, serverId)
+                        sendLocationUpdate(location, serverId, false)
                     }
                 }
             }
@@ -785,21 +784,15 @@ class LocationSensorManager : LocationSensorManagerBase() {
             5f,
             object : LocationListener {
                 override fun onLocationChanged(it: Location) {
-                    checkGps(wifi)
                     if (canCloseGps > 2) return
                     runBlocking {
                         getEnabledServers(
                             latestContext,
                             singleAccurateLocation
                         ).forEach { serverId ->
-                            sendLocationUpdate(it, serverId)
+                            sendLocationUpdate(it, serverId, wifi)
                         }
                     }
-
-                    if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 < 40000) return
-                    lastTime2 = System.currentTimeMillis()
-                    Log.e("onLocationChanged", "${it.latitude}:${it.longitude}")
-                    getGeocodedLocation(it)
                 }
 
             }, Looper.getMainLooper()
@@ -820,13 +813,9 @@ class LocationSensorManager : LocationSensorManagerBase() {
                                 latestContext,
                                 singleAccurateLocation
                             ).forEach { serverId ->
-                                sendLocationUpdate(it, serverId, true)
+                                sendLocationUpdate(it, serverId, wifi, true)
                             }
                         }
-                        if (lastTime3 != 0L && System.currentTimeMillis() - lastTime3 < 180000) return
-                        lastTime3 = System.currentTimeMillis()
-                        Log.e("onLocationChanged2", "${it.latitude}:${it.longitude}")
-                        getGeocodedLocation(it)
                     }
 
                 }, Looper.getMainLooper()
@@ -842,7 +831,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
                         latestContext,
                         singleAccurateLocation
                     ).forEach { serverId ->
-                        sendLocationUpdate(it, serverId)
+                        sendLocationUpdate(it, serverId, wifi)
                     }
                 }
 
@@ -915,7 +904,8 @@ class LocationSensorManager : LocationSensorManagerBase() {
     private fun sendGeocodedLocation(address: Address) {
         var mAddressLine: String? = address.getAddressLine(0)
         if (mAddressLine.isNullOrEmpty()) {
-            mAddressLine = address.countryName + address.locality + address.subLocality + address.thoroughfare
+            mAddressLine =
+                address.countryName + address.locality + address.subLocality + address.thoroughfare
         }
         onSensorUpdated(
             latestContext,
@@ -962,6 +952,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
     private fun sendLocationUpdate(
         location: Location,
         serverId: Int,
+        wifi: Boolean,
         ignoreAccuracy: Boolean = false,
     ) {
         Log.d(
@@ -974,8 +965,11 @@ class LocationSensorManager : LocationSensorManagerBase() {
         var accuracy = 0
         if (location.accuracy.toInt() >= 0) {
             accuracy = location.accuracy.toInt()
-            if (accuracy > 25 && !ignoreAccuracy) return
+            if (accuracy > 35 && !ignoreAccuracy) return
         }
+        lastTime2 = System.currentTimeMillis()
+        getGeocodedLocation(location)
+        checkGps(wifi)
         val updateLocation: UpdateLocation
         val updateLocationString: String
         runBlocking {

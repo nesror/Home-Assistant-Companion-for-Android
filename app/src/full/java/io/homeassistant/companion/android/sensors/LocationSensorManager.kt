@@ -798,26 +798,21 @@ class LocationSensorManager : LocationSensorManagerBase() {
             }, Looper.getMainLooper()
         )
 
-        if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 > 180000 && canCloseGps < 2) {
-            locationManager.requestLocationUpdates(
+        if (lastTime2 == 0L) {
+            lastTime2 = System.currentTimeMillis()
+        }
+        if (System.currentTimeMillis() - lastTime2 > 180000 && canCloseGps < 2) {
+            locationManager.requestSingleUpdate (
                 LocationManager.NETWORK_PROVIDER,
-                180000,
-                5f,
-                object : LocationListener {
-                    override fun onLocationChanged(it: Location) {
-                        checkGps(wifi)
-                        if (canCloseGps > 1) return
-                        if (lastTime2 != 0L && System.currentTimeMillis() - lastTime2 < 180000) return
-                        runBlocking {
-                            getEnabledServers(
-                                latestContext,
-                                singleAccurateLocation
-                            ).forEach { serverId ->
-                                sendLocationUpdate(it, serverId, wifi, true)
-                            }
+                {
+                    runBlocking {
+                        getEnabledServers(
+                            latestContext,
+                            singleAccurateLocation
+                        ).forEach { serverId ->
+                            sendLocationUpdate(it, serverId, wifi, true)
                         }
                     }
-
                 }, Looper.getMainLooper()
             )
         }
@@ -994,7 +989,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
 //            return
 //        }
 
-        if (location.time < lastLocationSend) {
+        if (location.time < lastLocationSend || (now - location.time) > 320000) {
             Log.d(
                 TAG,
                 "Skipping old location update since time is before the last one we sent, received: ${location.time} last sent: $lastLocationSend"

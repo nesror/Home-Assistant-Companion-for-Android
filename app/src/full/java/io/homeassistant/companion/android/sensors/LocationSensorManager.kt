@@ -776,7 +776,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
         canCloseGps = latestContext.getSharedPreferences("config", Context.MODE_PRIVATE)
             .getInt("canCloseGps", 0)
         checkGps(wifi)
-        if (canCloseGps > 10) return
+        if (canCloseGps > 15) return
 
         locationManager.requestLocationUpdates(
             LocationManager.GPS_PROVIDER,
@@ -960,7 +960,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
         var accuracy = 0
         if (location.accuracy.toInt() >= 0) {
             accuracy = location.accuracy.toInt()
-            if (accuracy > 35 && !ignoreAccuracy && canCloseGps < 2) return
+            if (accuracy > 25 ) return
         }
         val now = System.currentTimeMillis()
 

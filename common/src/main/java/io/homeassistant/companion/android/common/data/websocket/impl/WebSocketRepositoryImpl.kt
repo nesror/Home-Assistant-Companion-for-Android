@@ -34,7 +34,6 @@ import io.homeassistant.companion.android.common.data.websocket.impl.entities.As
 import io.homeassistant.companion.android.common.data.websocket.impl.entities.AssistPipelineSttEnd
 import io.homeassistant.companion.android.common.data.websocket.impl.entities.AssistPipelineTtsEnd
 import io.homeassistant.companion.android.common.data.websocket.impl.entities.CompressedStateChangedEvent
-import io.homeassistant.companion.android.common.data.websocket.impl.entities.ConversationAgentInfoResponse
 import io.homeassistant.companion.android.common.data.websocket.impl.entities.ConversationResponse
 import io.homeassistant.companion.android.common.data.websocket.impl.entities.CurrentUserResponse
 import io.homeassistant.companion.android.common.data.websocket.impl.entities.DeviceRegistryResponse
@@ -197,6 +196,17 @@ class WebSocketRepositoryImpl @AssistedInject constructor(
         return mapResponse(socketResponse)
     }
 
+    override suspend fun getEntityRegistryFor(entityId: String): EntityRegistryResponse? {
+        val socketResponse = sendMessage(
+            mapOf(
+                "type" to "config/entity_registry/get",
+                "entity_id" to entityId
+            )
+        )
+
+        return mapResponse(socketResponse)
+    }
+
     override suspend fun getServices(): List<DomainResponse>? {
         val socketResponse = sendMessage(
             mapOf(
@@ -216,17 +226,6 @@ class WebSocketRepositoryImpl @AssistedInject constructor(
             mapOf(
                 "type" to "conversation/process",
                 "text" to speech
-            )
-        )
-
-        return mapResponse(socketResponse)
-    }
-
-    override suspend fun getConversationAgentInfo(agentId: String): ConversationAgentInfoResponse? {
-        val socketResponse = sendMessage(
-            mapOf(
-                "type" to "conversation/agent/info",
-                "agent_id" to agentId
             )
         )
 

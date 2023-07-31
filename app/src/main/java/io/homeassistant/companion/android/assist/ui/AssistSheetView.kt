@@ -1,10 +1,17 @@
 package io.homeassistant.companion.android.assist.ui
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -22,9 +29,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.Divider
 import androidx.compose.material.DropdownMenu
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.ExperimentalMaterialApi
@@ -51,25 +61,25 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.community.material.CommunityMaterial
 import io.homeassistant.companion.android.R
-import io.homeassistant.companion.android.assist.AssistViewModel
+import io.homeassistant.companion.android.common.assist.AssistViewModelBase
 import kotlinx.coroutines.launch
 import io.homeassistant.companion.android.common.R as commonR
 
@@ -78,10 +88,11 @@ import io.homeassistant.companion.android.common.R as commonR
 fun AssistSheetView(
     conversation: List<AssistMessage>,
     pipelines: List<AssistUiPipeline>,
-    inputMode: AssistViewModel.AssistInputMode?,
+    inputMode: AssistViewModelBase.AssistInputMode?,
     currentPipeline: AssistUiPipeline?,
     fromFrontend: Boolean,
     onSelectPipeline: (Int, String) -> Unit,
+    onManagePipelines: (() -> Unit)?,
     onChangeInput: () -> Unit,
     onTextInput: (String) -> Unit,
     onMicrophoneInput: () -> Unit,
@@ -116,7 +127,7 @@ fun AssistSheetView(
             ) {
                 Column {
                     val lazyListState = rememberLazyListState()
-                    LaunchedEffect(conversation.size) {
+                    LaunchedEffect("${conversation.size}.${conversation.lastOrNull()?.message?.length}") {
                         lazyListState.animateScrollToItem(conversation.size)
                     }
 
@@ -124,7 +135,8 @@ fun AssistSheetView(
                         pipelines = pipelines,
                         currentPipeline = currentPipeline,
                         fromFrontend = fromFrontend,
-                        onSelectPipeline = onSelectPipeline
+                        onSelectPipeline = onSelectPipeline,
+                        onManagePipelines = onManagePipelines
                     )
                     LazyColumn(
                         state = lazyListState,
@@ -160,7 +172,8 @@ fun AssistSheetHeader(
     pipelines: List<AssistUiPipeline>,
     currentPipeline: AssistUiPipeline?,
     fromFrontend: Boolean,
-    onSelectPipeline: (Int, String) -> Unit
+    onSelectPipeline: (Int, String) -> Unit,
+    onManagePipelines: (() -> Unit)?
 ) = Column(verticalArrangement = Arrangement.Center) {
     Text(
         text = stringResource(if (fromFrontend) commonR.string.assist else commonR.string.app_name),
@@ -169,13 +182,9 @@ fun AssistSheetHeader(
     )
     if (currentPipeline != null) {
         val color = colorResource(commonR.color.colorOnSurfaceVariant)
-        val weight = if (currentPipeline.attributionName != null) 0.5f else 1f
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Box(Modifier.weight(weight, fill = false)) {
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Box {
                 var pipelineShowList by remember { mutableStateOf(false) }
                 val pipelineShowServer by rememberSaveable(pipelines.size) {
                     mutableStateOf(pipelines.distinctBy { it.serverId }.size > 1)
@@ -214,23 +223,13 @@ fun AssistSheetHeader(
                             )
                         }
                     }
+                    if (onManagePipelines != null) {
+                        Divider()
+                        DropdownMenuItem(onClick = { onManagePipelines() }) {
+                            Text(stringResource(commonR.string.assist_manage_pipelines))
+                        }
+                    }
                 }
-            }
-            if (currentPipeline.attributionName != null) {
-                val uriHandler = LocalUriHandler.current
-                val baseModifier = Modifier.weight(weight, fill = false).padding(start = 8.dp)
-                val modifier = currentPipeline.attributionUrl?.let {
-                    Modifier
-                        .clickable { uriHandler.openUri(it) }
-                        .then(baseModifier)
-                } ?: baseModifier
-                Text(
-                    text = currentPipeline.attributionName,
-                    textDecoration = if (currentPipeline.attributionUrl != null) TextDecoration.Underline else null,
-                    color = color,
-                    style = MaterialTheme.typography.caption,
-                    modifier = modifier
-                )
             }
         }
     }
@@ -238,7 +237,7 @@ fun AssistSheetHeader(
 
 @Composable
 fun AssistSheetControls(
-    inputMode: AssistViewModel.AssistInputMode?,
+    inputMode: AssistViewModelBase.AssistInputMode?,
     onChangeInput: () -> Unit,
     onTextInput: (String) -> Unit,
     onMicrophoneInput: () -> Unit
@@ -248,18 +247,18 @@ fun AssistSheetControls(
         return
     }
 
-    if (inputMode == AssistViewModel.AssistInputMode.BLOCKED) { // No info and not recoverable, no space
+    if (inputMode == AssistViewModelBase.AssistInputMode.BLOCKED) { // No info and not recoverable, no space
         return
     }
 
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(inputMode) {
-        if (inputMode == AssistViewModel.AssistInputMode.TEXT || inputMode == AssistViewModel.AssistInputMode.TEXT_ONLY) {
+        if (inputMode == AssistViewModelBase.AssistInputMode.TEXT || inputMode == AssistViewModelBase.AssistInputMode.TEXT_ONLY) {
             focusRequester.requestFocus()
         }
     }
 
-    if (inputMode == AssistViewModel.AssistInputMode.TEXT || inputMode == AssistViewModel.AssistInputMode.TEXT_ONLY) {
+    if (inputMode == AssistViewModelBase.AssistInputMode.TEXT || inputMode == AssistViewModelBase.AssistInputMode.TEXT_ONLY) {
         var text by rememberSaveable(stateSaver = TextFieldValue.Saver) {
             mutableStateOf(TextFieldValue())
         }
@@ -284,13 +283,13 @@ fun AssistSheetControls(
                 if (text.text.isNotBlank()) {
                     onTextInput(text.text)
                     text = TextFieldValue("")
-                } else if (inputMode != AssistViewModel.AssistInputMode.TEXT_ONLY) {
+                } else if (inputMode != AssistViewModelBase.AssistInputMode.TEXT_ONLY) {
                     onChangeInput()
                 }
             },
-            enabled = (inputMode != AssistViewModel.AssistInputMode.TEXT_ONLY || text.text.isNotBlank())
+            enabled = (inputMode != AssistViewModelBase.AssistInputMode.TEXT_ONLY || text.text.isNotBlank())
         ) {
-            val inputIsSend = text.text.isNotBlank() || inputMode == AssistViewModel.AssistInputMode.TEXT_ONLY
+            val inputIsSend = text.text.isNotBlank() || inputMode == AssistViewModelBase.AssistInputMode.TEXT_ONLY
             Image(
                 asset = if (inputIsSend) CommunityMaterial.Icon3.cmd_send else CommunityMaterial.Icon3.cmd_microphone,
                 contentDescription = stringResource(
@@ -303,22 +302,50 @@ fun AssistSheetControls(
     } else {
         Spacer(Modifier.size(48.dp))
         Spacer(Modifier.weight(0.5f))
-        OutlinedButton({ onMicrophoneInput() }) {
-            val inputIsActive = inputMode == AssistViewModel.AssistInputMode.VOICE_ACTIVE
-            Image(
-                asset = CommunityMaterial.Icon3.cmd_microphone,
-                contentDescription = stringResource(
-                    if (inputIsActive) commonR.string.assist_stop_listening else commonR.string.assist_start_listening
-                ),
-                colorFilter = ColorFilter.tint(
-                    if (inputIsActive) {
-                        LocalContentColor.current
-                    } else {
-                        MaterialTheme.colors.onSurface
-                    }
-                ),
-                modifier = Modifier.size(32.dp)
-            )
+        Box(
+            modifier = Modifier.size(64.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            val inputIsActive = inputMode == AssistViewModelBase.AssistInputMode.VOICE_ACTIVE
+            if (inputIsActive) {
+                val transition = rememberInfiniteTransition()
+                val scale by transition.animateFloat(
+                    initialValue = 1f,
+                    targetValue = 1.2f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(600, easing = LinearEasing),
+                        repeatMode = RepeatMode.Reverse
+                    )
+                )
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .scale(scale)
+                        .background(color = colorResource(commonR.color.colorSpeechText), shape = CircleShape)
+                        .clip(CircleShape)
+                )
+            }
+            OutlinedButton(
+                onClick = { onMicrophoneInput() },
+                modifier = Modifier.size(48.dp),
+                shape = CircleShape,
+                border = if (inputIsActive) null else ButtonDefaults.outlinedBorder,
+                colors = if (inputIsActive) {
+                    ButtonDefaults.outlinedButtonColors(backgroundColor = Color.Transparent, contentColor = Color.Black)
+                } else {
+                    ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colors.onSurface)
+                },
+                contentPadding = PaddingValues(all = 0.dp)
+            ) {
+                Image(
+                    asset = CommunityMaterial.Icon3.cmd_microphone,
+                    contentDescription = stringResource(
+                        if (inputIsActive) commonR.string.assist_stop_listening else commonR.string.assist_start_listening
+                    ),
+                    colorFilter = ColorFilter.tint(LocalContentColor.current),
+                    modifier = Modifier.size(28.dp)
+                )
+            }
         }
         Spacer(Modifier.weight(0.5f))
         IconButton({ onChangeInput() }) {

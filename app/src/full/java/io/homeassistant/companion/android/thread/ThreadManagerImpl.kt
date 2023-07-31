@@ -3,6 +3,7 @@ package io.homeassistant.companion.android.thread
 import android.app.Activity
 import android.content.Context
 import android.content.IntentSender
+import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
 import androidx.activity.result.ActivityResult
@@ -21,7 +22,8 @@ import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 class ThreadManagerImpl @Inject constructor(
-    private val serverManager: ServerManager
+    private val serverManager: ServerManager,
+    private val packageManager: PackageManager
 ) : ThreadManager {
     companion object {
         private const val TAG = "ThreadManagerImpl"
@@ -31,7 +33,7 @@ class ThreadManagerImpl @Inject constructor(
     }
 
     override fun appSupportsThread(): Boolean =
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1 && !packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
 
     override suspend fun coreSupportsThread(serverId: Int): Boolean {
         if (!serverManager.isRegistered() || serverManager.getServer(serverId)?.user?.isAdmin != true) return false
@@ -48,8 +50,9 @@ class ThreadManagerImpl @Inject constructor(
         context: Context,
         serverId: Int,
         scope: CoroutineScope
-    ): IntentSender? {
-        if (!appSupportsThread() || !coreSupportsThread(serverId)) return null
+    ): ThreadManager.SyncResult {
+        if (!appSupportsThread()) return ThreadManager.SyncResult.AppUnsupported
+        if (!coreSupportsThread(serverId)) return ThreadManager.SyncResult.ServerUnsupported
 
         val getDeviceDataset = scope.async { getPreferredDatasetFromDevice(context) }
         val getCoreDatasets = scope.async { getDatasetsFromServer(serverId) }
@@ -57,29 +60,61 @@ class ThreadManagerImpl @Inject constructor(
         val coreThreadDatasets = getCoreDatasets.await()
         val coreThreadDataset = coreThreadDatasets?.firstOrNull { it.preferred }
 
-        if (deviceThreadIntent == null && coreThreadDataset != null) {
+        return if (deviceThreadIntent == null && coreThreadDataset != null) {
             try {
                 importDatasetFromServer(context, coreThreadDataset.datasetId, serverId)
                 Log.d(TAG, "Thread import to device completed")
+                ThreadManager.SyncResult.OnlyOnServer(imported = true)
             } catch (e: Exception) {
                 Log.e(TAG, "Thread import to device failed", e)
+                ThreadManager.SyncResult.OnlyOnServer(imported = false)
             }
         } else if (deviceThreadIntent != null && coreThreadDataset == null) {
             Log.d(TAG, "Thread export is ready")
-            return deviceThreadIntent
+            ThreadManager.SyncResult.OnlyOnDevice(exportIntent = deviceThreadIntent)
         } else if (deviceThreadIntent != null && coreThreadDataset != null) {
             try {
                 val coreIsDevicePreferred = isPreferredDatasetByDevice(context, coreThreadDataset.datasetId, serverId)
                 Log.d(TAG, "Thread: device ${if (coreIsDevicePreferred) "prefers" else "doesn't prefer" } core preferred dataset")
+                val appIsDevicePreferred = coreIsDevicePreferred || appAddedIsPreferredCredentials(context)
+                Log.d(TAG, "Thread: device ${if (appIsDevicePreferred) "prefers" else "doesn't prefer" } dataset from app")
+
+                var exportFromDevice = false
+                var updated: Boolean? = null
                 if (!coreIsDevicePreferred) {
-                    return deviceThreadIntent // Import the dataset to core
+                    if (appIsDevicePreferred) {
+                        // Update or remove the device preferred credential to match core state
+                        try {
+                            updated = if (coreThreadDataset.source != "Google") { // Credential from HA, update
+                                importDatasetFromServer(context, coreThreadDataset.datasetId, serverId)
+                                true
+                            } else { // Imported from another app, so this shouldn't be managed by HA
+                                deleteThreadCredential(context)
+                                false
+                            }
+                            Log.d(TAG, "Thread update device completed")
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Thread update device failed", e)
+                        }
+                    } else {
+                        exportFromDevice = true
+                    }
                 }
+
+                // Import the dataset to core if different from device
+                ThreadManager.SyncResult.AllHaveCredentials(
+                    matches = coreIsDevicePreferred,
+                    fromApp = appIsDevicePreferred,
+                    updated = updated,
+                    exportIntent = if (exportFromDevice) deviceThreadIntent else null
+                )
             } catch (e: Exception) {
                 Log.e(TAG, "Thread device/core preferred comparison failed", e)
+                ThreadManager.SyncResult.AllHaveCredentials(matches = null, fromApp = null, updated = null, exportIntent = null)
             }
-        } // else if device and core both don't have datasets, continue
-
-        return null
+        } else {
+            ThreadManager.SyncResult.NoneHaveCredentials
+        }
     }
 
     override suspend fun getPreferredDatasetFromServer(serverId: Int): ThreadDatasetResponse? =
@@ -111,26 +146,55 @@ class ThreadManagerImpl @Inject constructor(
 
     private suspend fun isPreferredDatasetByDevice(context: Context, datasetId: String, serverId: Int): Boolean {
         val tlv = serverManager.webSocketRepository(serverId).getThreadDatasetTlv(datasetId)?.tlvAsByteArray
-        if (tlv != null) {
+        return if (tlv != null) {
             val threadNetworkCredentials = ThreadNetworkCredentials.fromActiveOperationalDataset(tlv)
-            return suspendCoroutine { cont ->
-                ThreadNetwork.getClient(context)
-                    .isPreferredCredentials(threadNetworkCredentials)
-                    .addOnSuccessListener { cont.resume(it == IsPreferredCredentialsResult.PREFERRED_CREDENTIALS_MATCHED) }
-                    .addOnFailureListener { cont.resumeWithException(it) }
-            }
+            isPreferredCredentials(context, threadNetworkCredentials)
+        } else {
+            false
         }
-        return false
     }
 
-    override suspend fun sendThreadDatasetExportResult(result: ActivityResult, serverId: Int) {
+    private suspend fun appAddedIsPreferredCredentials(context: Context): Boolean {
+        val appCredentials = suspendCoroutine { cont ->
+            ThreadNetwork.getClient(context)
+                .allCredentials
+                .addOnSuccessListener { cont.resume(it) }
+                .addOnFailureListener { cont.resume(null) }
+        }
+        return try {
+            appCredentials?.any { isPreferredCredentials(context, it) } ?: false
+        } catch (e: Exception) {
+            Log.e(TAG, "Thread app added credentials preferred check failed", e)
+            false
+        }
+    }
+
+    private suspend fun isPreferredCredentials(context: Context, credentials: ThreadNetworkCredentials): Boolean = suspendCoroutine { cont ->
+        ThreadNetwork.getClient(context)
+            .isPreferredCredentials(credentials)
+            .addOnSuccessListener { cont.resume(it == IsPreferredCredentialsResult.PREFERRED_CREDENTIALS_MATCHED) }
+            .addOnFailureListener { cont.resumeWithException(it) }
+    }
+
+    override suspend fun sendThreadDatasetExportResult(result: ActivityResult, serverId: Int): String? {
         if (result.resultCode == Activity.RESULT_OK && coreSupportsThread(serverId)) {
             val threadNetworkCredentials = ThreadNetworkCredentials.fromIntentSenderResultData(result.data!!)
             try {
-                serverManager.webSocketRepository(serverId).addThreadDataset(threadNetworkCredentials.activeOperationalDataset)
+                val added = serverManager.webSocketRepository(serverId).addThreadDataset(threadNetworkCredentials.activeOperationalDataset)
+                if (added) return threadNetworkCredentials.networkName
             } catch (e: Exception) {
                 Log.e(TAG, "Error while executing server new Thread credentials request", e)
             }
         }
+        return null
+    }
+
+    private suspend fun deleteThreadCredential(context: Context) = suspendCoroutine { cont ->
+        // This only works because we currently always use the same border agent ID
+        val threadBorderAgent = ThreadBorderAgent.newBuilder(BORDER_AGENT_ID.toByteArray()).build()
+        ThreadNetwork.getClient(context)
+            .removeCredentials(threadBorderAgent)
+            .addOnSuccessListener { cont.resume(true) }
+            .addOnFailureListener { cont.resumeWithException(it) }
     }
 }

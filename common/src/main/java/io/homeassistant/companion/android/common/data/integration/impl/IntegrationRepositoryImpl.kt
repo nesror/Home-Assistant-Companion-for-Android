@@ -25,6 +25,7 @@ import io.homeassistant.companion.android.common.data.integration.impl.entities.
 import io.homeassistant.companion.android.common.data.integration.impl.entities.Template
 import io.homeassistant.companion.android.common.data.integration.impl.entities.UpdateLocationRequest
 import io.homeassistant.companion.android.common.data.servers.ServerManager
+import io.homeassistant.companion.android.common.data.websocket.impl.entities.AssistPipelineEvent
 import io.homeassistant.companion.android.common.data.websocket.impl.entities.AssistPipelineEventType
 import io.homeassistant.companion.android.common.data.websocket.impl.entities.AssistPipelineIntentEnd
 import io.homeassistant.companion.android.common.data.websocket.impl.entities.GetConfigResponse
@@ -33,13 +34,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.util.concurrent.TimeUnit
 import javax.inject.Named
-import kotlin.coroutines.resume
 
 class IntegrationRepositoryImpl @AssistedInject constructor(
     private val integrationService: IntegrationService,
@@ -66,6 +65,7 @@ class IntegrationRepositoryImpl @AssistedInject constructor(
         private const val PREF_SESSION_EXPIRE = "session_expire"
         private const val PREF_TRUSTED = "trusted"
         private const val PREF_SEC_WARNING_NEXT = "sec_warning_last"
+        private const val PREF_LAST_USED_PIPELINE = "last_used_pipeline"
         private const val TAG = "IntegrationRepository"
         private const val RATE_LIMIT_URL = BuildConfig.RATE_LIMIT_URL
 
@@ -171,6 +171,7 @@ class IntegrationRepositoryImpl @AssistedInject constructor(
         localStorage.remove("${serverId}_$PREF_SESSION_EXPIRE")
         localStorage.remove("${serverId}_$PREF_TRUSTED")
         localStorage.remove("${serverId}_$PREF_SEC_WARNING_NEXT")
+        localStorage.remove("${serverId}_$PREF_LAST_USED_PIPELINE")
         // app version and push token is device-specific
     }
 
@@ -382,10 +383,7 @@ class IntegrationRepositoryImpl @AssistedInject constructor(
         val sessionExpired = currentMillis > sessionExpireMillis
         val appLocked = lockEnabled && !appActive && sessionExpired
 
-        Log.d(
-            TAG,
-            "isAppLocked(): $appLocked. (LockEnabled: $lockEnabled, appActive: $appActive, expireMillis: $sessionExpireMillis, currentMillis: $currentMillis)"
-        )
+        Log.d(TAG, "isAppLocked(): $appLocked. (LockEnabled: $lockEnabled, appActive: $appActive, expireMillis: $sessionExpireMillis, currentMillis: $currentMillis)")
         return appLocked
     }
 
@@ -536,33 +534,34 @@ class IntegrationRepositoryImpl @AssistedInject constructor(
         }?.toList()
     }
 
-    override suspend fun getAssistResponse(speech: String): String? {
+    override suspend fun getAssistResponse(text: String, pipelineId: String?, conversationId: String?): Flow<AssistPipelineEvent>? {
         return if (server.version?.isAtLeast(2023, 5, 0) == true) {
-            var job: Job? = null
-            val response = suspendCancellableCoroutine { cont ->
-                job = ioScope.launch {
-                    webSocketRepository.runAssistPipelineForText(speech)?.collect {
-                        if (!cont.isActive) return@collect
-                        when (it.type) {
-                            AssistPipelineEventType.INTENT_END ->
-                                cont.resume((it.data as AssistPipelineIntentEnd).intentOutput.response.speech.plain["speech"])
-
-                            AssistPipelineEventType.ERROR,
-                            AssistPipelineEventType.RUN_END -> cont.resume(null)
-
-                            else -> { /* Do nothing */
-                            }
-                        }
-                    } ?: cont.resume(null)
-                }
-            }
-            job?.cancel()
-            response
+            webSocketRepository.runAssistPipelineForText(text, pipelineId, conversationId)
         } else {
-            val response = webSocketRepository.getConversation(speech)
-            response?.response?.speech?.plain?.get("speech")
+            flow {
+                emit(AssistPipelineEvent(type = AssistPipelineEventType.RUN_START, data = null))
+                emit(AssistPipelineEvent(type = AssistPipelineEventType.INTENT_START, data = null))
+                val response = webSocketRepository.getConversation(text)
+                if (response != null) {
+                    emit(
+                        AssistPipelineEvent(
+                            type = AssistPipelineEventType.INTENT_END,
+                            data = AssistPipelineIntentEnd(response)
+                        )
+                    )
+                } else {
+                    emit(AssistPipelineEvent(type = AssistPipelineEventType.ERROR, data = null))
+                }
+                emit(AssistPipelineEvent(type = AssistPipelineEventType.RUN_END, data = null))
+            }
         }
     }
+
+    override suspend fun getLastUsedPipeline(): String? =
+        localStorage.getString("${serverId}_$PREF_LAST_USED_PIPELINE")
+
+    override suspend fun setLastUsedPipeline(pipelineId: String) =
+        localStorage.putString("${serverId}_$PREF_LAST_USED_PIPELINE", pipelineId)
 
     override suspend fun getEntities(): List<Entity<Any>>? {
         val response = webSocketRepository.getStates()
@@ -743,10 +742,7 @@ class IntegrationRepositoryImpl @AssistedInject constructor(
         val current = System.currentTimeMillis()
         val next = localStorage.getLong("${serverId}_$PREF_SEC_WARNING_NEXT") ?: 0
         return if (current > next) {
-            localStorage.putLong(
-                "${serverId}_$PREF_SEC_WARNING_NEXT",
-                current + (86400000)
-            ) // 24 hours
+            localStorage.putLong("${serverId}_$PREF_SEC_WARNING_NEXT", current + (86400000)) // 24 hours
             true
         } else {
             false
@@ -757,8 +753,7 @@ class IntegrationRepositoryImpl @AssistedInject constructor(
         val oldDeviceRegistration = getRegistration()
         val pushToken = deviceRegistration.pushToken ?: oldDeviceRegistration.pushToken
 
-        val appData =
-            mutableMapOf<String, Any>("push_websocket_channel" to deviceRegistration.pushWebsocket)
+        val appData = mutableMapOf<String, Any>("push_websocket_channel" to deviceRegistration.pushWebsocket)
         if (!pushToken.isNullOrBlank()) {
             appData["push_url"] = PUSH_URL
             appData["push_token"] = pushToken
@@ -789,9 +784,7 @@ class IntegrationRepositoryImpl @AssistedInject constructor(
                 updateLocation.speed,
                 updateLocation.altitude,
                 updateLocation.course,
-                updateLocation.verticalAccuracy,
-                updateLocation.time,
-                updateLocation.gpsTime
+                updateLocation.verticalAccuracy
             )
         )
     }

@@ -45,8 +45,8 @@ class WifiHelperImpl @Inject constructor(
     }
 
     override fun getWifiSsid(): String? =
-        wifiManager?.connectionInfo?.ssid
+        wifiManager?.connectionInfo?.ssid // Deprecated but callback doesn't provide SSID info instantly
 
     override fun getWifiBssid(): String? =
-        wifiManager?.connectionInfo?.bssid
+        wifiManager?.connectionInfo?.bssid // Deprecated but callback doesn't provide BSSID info instantly
 }

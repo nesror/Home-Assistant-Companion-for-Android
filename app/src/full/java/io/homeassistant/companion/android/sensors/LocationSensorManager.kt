@@ -260,19 +260,19 @@ class LocationSensorManager : LocationSensorManagerBase() {
         when (intent.action) {
             Intent.ACTION_BOOT_COMPLETED,
             ACTION_REQUEST_LOCATION_UPDATES -> setupLocationTracking()
-
             ACTION_PROCESS_LOCATION,
             ACTION_PROCESS_HIGH_ACCURACY_LOCATION -> handleLocationUpdate(intent)
-
             ACTION_PROCESS_GEO -> handleLocationUpdate(intent)
             ACTION_REQUEST_ACCURATE_LOCATION_UPDATE -> requestSingleAccurateLocation()
             ACTION_FORCE_HIGH_ACCURACY -> {
-                var command = intent.extras?.get("command")?.toString()
-                when (command) {
+                when (val command = intent.extras?.getString("command")) {
                     DeviceCommandData.TURN_ON, DeviceCommandData.TURN_OFF, MessagingManager.FORCE_ON -> {
-                        var turnOn = command != DeviceCommandData.TURN_OFF
-                        if (turnOn) Log.d(TAG, "Forcing of high accuracy mode enabled")
-                        else Log.d(TAG, "Forcing of high accuracy mode disabled")
+                        val turnOn = command != DeviceCommandData.TURN_OFF
+                        if (turnOn) {
+                            Log.d(TAG, "Forcing of high accuracy mode enabled")
+                        } else {
+                            Log.d(TAG, "Forcing of high accuracy mode disabled")
+                        }
                         forceHighAccuracyModeOn = turnOn
                         forceHighAccuracyModeOff = false
                         setHighAccuracyModeSetting(latestContext, turnOn)
@@ -300,7 +300,6 @@ class LocationSensorManager : LocationSensorManagerBase() {
                     }
                 }
             }
-
             else -> Log.w(TAG, "Unknown intent action: ${intent.action}!")
         }
     }
@@ -453,7 +452,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
 
             serverManager.defaultServers.forEach {
                 getSendLocationAsSetting(it.id) // Sets up the setting, value isn't used right now
-            }// Sets up the setting, value isn't used right now
+            }
         }
     }
 
@@ -1196,7 +1195,6 @@ class LocationSensorManager : LocationSensorManagerBase() {
                     Manifest.permission.BLUETOOTH_CONNECT
                 )
             }
-
             (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) -> {
                 arrayOf(
                     Manifest.permission.ACCESS_FINE_LOCATION,
@@ -1205,7 +1203,6 @@ class LocationSensorManager : LocationSensorManagerBase() {
                     Manifest.permission.BLUETOOTH
                 )
             }
-
             else -> {
                 arrayOf(
                     Manifest.permission.ACCESS_FINE_LOCATION,
@@ -1281,5 +1278,4 @@ class LocationSensorManager : LocationSensorManagerBase() {
             attributes
         )
     }
-
 }

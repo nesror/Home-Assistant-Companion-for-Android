@@ -10,7 +10,5 @@ data class UpdateLocationRequest(
     val speed: Int?,
     val altitude: Int?,
     val course: Int?,
-    val verticalAccuracy: Int?,
-    val time: Long?,
-    val gpsTime: Long?
+    val verticalAccuracy: Int?
 )

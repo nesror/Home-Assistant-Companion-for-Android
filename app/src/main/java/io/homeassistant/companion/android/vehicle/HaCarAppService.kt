@@ -10,11 +10,14 @@ import androidx.car.app.Screen
 import androidx.car.app.ScreenManager
 import androidx.car.app.Session
 import androidx.car.app.SessionInfo
+import androidx.car.app.hardware.CarHardwareManager
+import androidx.car.app.hardware.info.CarInfo
 import androidx.car.app.validation.HostValidator
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import io.homeassistant.companion.android.R
 import io.homeassistant.companion.android.common.data.integration.Entity
+import io.homeassistant.companion.android.common.data.prefs.PrefsRepository
 import io.homeassistant.companion.android.common.data.servers.ServerManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -32,10 +35,15 @@ class HaCarAppService : CarAppService() {
 
     companion object {
         private const val TAG = "HaCarAppService"
+        var carInfo: CarInfo? = null
+            private set
     }
 
     @Inject
     lateinit var serverManager: ServerManager
+
+    @Inject
+    lateinit var prefsRepository: PrefsRepository
 
     private val serverId = MutableStateFlow(0)
     private val allEntities = MutableStateFlow<Map<String, Entity<*>>>(emptyMap())
@@ -67,6 +75,8 @@ class HaCarAppService : CarAppService() {
             )
 
             override fun onCreateScreen(intent: Intent): Screen {
+                carInfo = carContext.getCarService(CarHardwareManager::class.java).carInfo
+
                 if (intent.getBooleanExtra("TRANSITION_LAUNCH", false)) {
                     carContext
                         .getCarService(ScreenManager::class.java).run {
@@ -75,7 +85,8 @@ class HaCarAppService : CarAppService() {
                                     carContext,
                                     serverManager,
                                     serverIdFlow,
-                                    entityFlow
+                                    entityFlow,
+                                    prefsRepository
                                 ) { loadEntities(lifecycleScope, it) }
                             )
 
@@ -95,7 +106,8 @@ class HaCarAppService : CarAppService() {
                                     carContext,
                                     serverManager,
                                     serverIdFlow,
-                                    entityFlow
+                                    entityFlow,
+                                    prefsRepository
                                 ) { loadEntities(lifecycleScope, it) }
                             )
                         }

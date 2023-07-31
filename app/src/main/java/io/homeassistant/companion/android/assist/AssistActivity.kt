@@ -22,7 +22,9 @@ import com.google.accompanist.themeadapter.material.MdcTheme
 import dagger.hilt.android.AndroidEntryPoint
 import io.homeassistant.companion.android.BaseActivity
 import io.homeassistant.companion.android.assist.ui.AssistSheetView
+import io.homeassistant.companion.android.common.assist.AssistViewModelBase
 import io.homeassistant.companion.android.common.data.servers.ServerManager
+import io.homeassistant.companion.android.webview.WebViewActivity
 
 @AndroidEntryPoint
 class AssistActivity : BaseActivity() {
@@ -78,9 +80,9 @@ class AssistActivity : BaseActivity() {
                     null
                 },
                 pipelineId = if (intent.hasExtra(EXTRA_PIPELINE)) {
-                    intent.getStringExtra(EXTRA_PIPELINE)
+                    intent.getStringExtra(EXTRA_PIPELINE) ?: AssistViewModelBase.PIPELINE_LAST_USED
                 } else {
-                    null
+                    AssistViewModelBase.PIPELINE_LAST_USED
                 },
                 startListening = if (intent.hasExtra(EXTRA_START_LISTENING)) {
                     intent.getBooleanExtra(EXTRA_START_LISTENING, true)
@@ -89,6 +91,8 @@ class AssistActivity : BaseActivity() {
                 }
             )
         }
+
+        val fromFrontend = intent.getBooleanExtra(EXTRA_FROM_FRONTEND, false)
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
@@ -103,9 +107,25 @@ class AssistActivity : BaseActivity() {
                     conversation = viewModel.conversation,
                     pipelines = viewModel.pipelines,
                     inputMode = viewModel.inputMode,
-                    fromFrontend = intent.getBooleanExtra(EXTRA_FROM_FRONTEND, false),
+                    fromFrontend = fromFrontend,
                     currentPipeline = viewModel.currentPipeline,
                     onSelectPipeline = viewModel::changePipeline,
+                    onManagePipelines =
+                    if (fromFrontend && viewModel.userCanManagePipelines()) {
+                        {
+                            startActivity(
+                                WebViewActivity.newInstance(
+                                    this,
+                                    "config/voice-assistants/assistants"
+                                ).apply {
+                                    flags += Intent.FLAG_ACTIVITY_NEW_TASK // Delivers data in onNewIntent
+                                }
+                            )
+                            finish()
+                        }
+                    } else {
+                        null
+                    },
                     onChangeInput = viewModel::onChangeInput,
                     onTextInput = viewModel::onTextInput,
                     onMicrophoneInput = viewModel::onMicrophoneInput,
@@ -125,5 +145,11 @@ class AssistActivity : BaseActivity() {
     override fun onPause() {
         super.onPause()
         viewModel.onPause()
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        this.intent = intent
+        viewModel.onNewIntent(intent)
     }
 }

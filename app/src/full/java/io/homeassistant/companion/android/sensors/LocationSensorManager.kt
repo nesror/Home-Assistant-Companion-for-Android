@@ -959,7 +959,12 @@ class LocationSensorManager : LocationSensorManagerBase() {
         var accuracy = 0
         if (location.accuracy.toInt() >= 0) {
             accuracy = location.accuracy.toInt()
-            if (accuracy > 25 ) return
+            val sensorDao = AppDatabase.getInstance(latestContext).sensorDao()
+            val sensorSettings = sensorDao.getSettings(backgroundLocation.id)
+            val minAccuracy = sensorSettings
+                .firstOrNull { it.name == SETTING_ACCURACY }?.value?.toIntOrNull()
+                ?: DEFAULT_MINIMUM_ACCURACY
+            if (accuracy > minAccuracy ) return
         }
         val now = System.currentTimeMillis()
 

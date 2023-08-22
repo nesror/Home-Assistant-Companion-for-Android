@@ -33,6 +33,12 @@ import io.homeassistant.companion.android.common.data.integration.isExecuting
 import io.homeassistant.companion.android.common.data.integration.onPressed
 import io.homeassistant.companion.android.common.data.prefs.PrefsRepository
 import io.homeassistant.companion.android.common.data.servers.ServerManager
+import io.homeassistant.companion.android.common.data.websocket.impl.entities.EntityRegistryResponse
+import io.homeassistant.companion.android.util.vehicle.MAP_DOMAINS
+import io.homeassistant.companion.android.util.vehicle.NOT_ACTIONABLE_DOMAINS
+import io.homeassistant.companion.android.util.vehicle.SUPPORTED_DOMAINS
+import io.homeassistant.companion.android.util.vehicle.alarmHasNoCode
+import io.homeassistant.companion.android.util.vehicle.canNavigate
 import io.homeassistant.companion.android.util.vehicle.getChangeServerGridItem
 import io.homeassistant.companion.android.util.vehicle.getDomainList
 import io.homeassistant.companion.android.util.vehicle.getDomainsGridItem
@@ -49,6 +55,7 @@ class EntityGridVehicleScreen(
     val prefsRepository: PrefsRepository,
     val integrationRepository: IntegrationRepository,
     val title: String,
+    private val entityRegistry: List<EntityRegistryResponse>?,
     private val domains: MutableSet<String>,
     private val entitiesFlow: Flow<List<Entity<*>>>,
     private val allEntities: Flow<Map<String, Entity<*>>>,
@@ -88,7 +95,9 @@ class EntityGridVehicleScreen(
                 serverManager,
                 serverId,
                 prefsRepository,
-                allEntities
+                allEntities,
+                entityRegistry,
+                lifecycleScope
             )
         }
         if (isFavorites) {
@@ -100,17 +109,20 @@ class EntityGridVehicleScreen(
                     allEntities
                 ).build()
             )
-            listBuilder.addItem(
-                getDomainsGridItem(
-                    carContext,
-                    screenManager,
-                    serverManager,
-                    integrationRepository,
-                    serverId,
-                    allEntities,
-                    prefsRepository
-                ).build()
-            )
+            if (domains.isNotEmpty()) {
+                listBuilder.addItem(
+                    getDomainsGridItem(
+                        carContext,
+                        screenManager,
+                        serverManager,
+                        integrationRepository,
+                        serverId,
+                        allEntities,
+                        prefsRepository,
+                        entityRegistry
+                    ).build()
+                )
+            }
             if (shouldSwitchServers) {
                 listBuilder.addItem(
                     getChangeServerGridItem(
@@ -160,28 +172,40 @@ class EntityGridVehicleScreen(
             if (entity.isExecuting()) {
                 gridItem.setLoading(entity.isExecuting())
             } else {
-                gridItem
-                    .setOnClickListener {
-                        Log.i(TAG, "${entity.entityId} clicked")
-                        if (entity.domain in MainVehicleScreen.MAP_DOMAINS) {
-                            val attrs = entity.attributes as? Map<*, *>
-                            if (attrs != null) {
-                                val lat = attrs["latitude"] as? Double
-                                val lon = attrs["longitude"] as? Double
-                                if (lat != null && lon != null) {
-                                    val intent = Intent(
-                                        CarContext.ACTION_NAVIGATE,
-                                        Uri.parse("geo:$lat,$lon")
-                                    )
-                                    carContext.startCarApp(intent)
+                if (entity.domain !in NOT_ACTIONABLE_DOMAINS || canNavigate(entity) || alarmHasNoCode(entity)) {
+                    gridItem
+                        .setOnClickListener {
+                            Log.i(TAG, "${entity.entityId} clicked")
+                            when (entity.domain) {
+                                in MAP_DOMAINS -> {
+                                    val attrs = entity.attributes as? Map<*, *>
+                                    if (attrs != null) {
+                                        val lat = attrs["latitude"] as? Double
+                                        val lon = attrs["longitude"] as? Double
+                                        if (lat != null && lon != null) {
+                                            val intent = Intent(
+                                                CarContext.ACTION_NAVIGATE,
+                                                Uri.parse("geo:$lat,$lon")
+                                            )
+                                            carContext.startCarApp(intent)
+                                        }
+                                    }
+                                }
+
+                                in SUPPORTED_DOMAINS -> {
+                                    lifecycleScope.launch {
+                                        entity.onPressed(integrationRepository)
+                                    }
+                                }
+
+                                else -> {
+                                    // No op
                                 }
                             }
-                        } else {
-                            lifecycleScope.launch {
-                                entity.onPressed(integrationRepository)
-                            }
                         }
-                    }
+                }
+
+                gridItem
                     .setImage(
                         CarIcon.Builder(
                             IconicsDrawable(carContext, icon).apply {

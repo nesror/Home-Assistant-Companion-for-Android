@@ -67,6 +67,7 @@ import io.homeassistant.companion.android.database.widget.StaticWidgetEntity
 import io.homeassistant.companion.android.database.widget.TemplateWidgetDao
 import io.homeassistant.companion.android.database.widget.TemplateWidgetEntity
 import io.homeassistant.companion.android.database.widget.WidgetBackgroundTypeConverter
+import io.homeassistant.companion.android.database.widget.WidgetTapActionConverter
 import kotlinx.coroutines.runBlocking
 import java.util.UUID
 import io.homeassistant.companion.android.common.R as commonR
@@ -90,7 +91,7 @@ import io.homeassistant.companion.android.common.R as commonR
         Server::class,
         Setting::class
     ],
-    version = 42,
+    version = 43,
     autoMigrations = [
         AutoMigration(from = 24, to = 25),
         AutoMigration(from = 25, to = 26),
@@ -108,7 +109,8 @@ import io.homeassistant.companion.android.common.R as commonR
         AutoMigration(from = 37, to = 38, spec = AppDatabase.Companion.Migration37to38::class),
         AutoMigration(from = 38, to = 39),
         AutoMigration(from = 39, to = 40),
-        AutoMigration(from = 41, to = 42)
+        AutoMigration(from = 41, to = 42),
+        AutoMigration(from = 42, to = 43)
     ]
 )
 @TypeConverters(
@@ -116,7 +118,8 @@ import io.homeassistant.companion.android.common.R as commonR
     LocalSensorSettingConverter::class,
     EntriesTypeConverter::class,
     SensorSettingTypeConverter::class,
-    WidgetBackgroundTypeConverter::class
+    WidgetBackgroundTypeConverter::class,
+    WidgetTapActionConverter::class
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun authenticationDao(): AuthenticationDao
@@ -397,7 +400,6 @@ abstract class AppDatabase : RoomDatabase() {
             override fun migrate(database: SupportSQLiteDatabase) {
                 val cursor = database.query("SELECT * FROM sensor_settings")
                 val sensorSettings = mutableListOf<ContentValues>()
-                var migrationSuccessful = false
                 var migrationFailed = false
                 try {
                     if (cursor.moveToFirst()) {
@@ -406,7 +408,7 @@ abstract class AppDatabase : RoomDatabase() {
                                 ContentValues().also {
                                     val currentSensorId = cursor.getString(cursor.getColumnIndex("sensor_id"))
                                     val currentSensorSettingName = cursor.getString(cursor.getColumnIndex("name"))
-                                    var entries: String = ""
+                                    var entries = ""
                                     var newSensorSettingName = currentSensorSettingName
                                     // Alarm
                                     if (currentSensorId == "next_alarm" && currentSensorSettingName == "Allow List") {
@@ -482,12 +484,11 @@ abstract class AppDatabase : RoomDatabase() {
                 } catch (e: Exception) {
                     migrationFailed = true
                     Log.e(TAG, "Unable to migrate, proceeding with recreating the table", e)
-                    null
                 }
                 database.execSQL("DROP TABLE IF EXISTS `sensor_settings`")
                 database.execSQL("CREATE TABLE IF NOT EXISTS `sensor_settings` (`sensor_id` TEXT NOT NULL, `name` TEXT NOT NULL, `value` TEXT NOT NULL, `value_type` TEXT NOT NULL DEFAULT 'string', `entries` TEXT NOT NULL, `enabled` INTEGER NOT NULL DEFAULT '1', PRIMARY KEY(`sensor_id`, `name`))")
 
-                sensorSettings?.forEach {
+                sensorSettings.forEach {
                     database.insert("sensor_settings", OnConflictStrategy.REPLACE, it)
                 }
                 if (migrationFailed) {

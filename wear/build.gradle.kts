@@ -1,22 +1,20 @@
 plugins {
-    id("com.android.application")
-    id("kotlin-android")
-    id("kotlin-kapt")
-    id("com.github.triplet.play")
-    kotlin("kapt")
-    id("dagger.hilt.android.plugin")
-    id("com.google.gms.google-services")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.kapt)
+    alias(libs.plugins.hilt)
+    alias(libs.plugins.google.services)
 }
 
 android {
     namespace = "io.homeassistant.companion.android"
 
-    compileSdk = 33
+    compileSdk = libs.versions.androidSdk.compile.get().toInt()
 
     defaultConfig {
         applicationId = "io.homeassistant.companion.android"
-        minSdk = 26
-        targetSdk = 32
+        minSdk = libs.versions.androidSdk.wear.min.get().toInt()
+        targetSdk = libs.versions.androidSdk.wear.target.get().toInt()
 
         versionName = project.version.toString()
         // We add 1 because the app and wear versions need to have different version codes.
@@ -61,12 +59,12 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = libs.versions.javaVersion.get()
     }
 
     compileOptions {
-        sourceCompatibility(JavaVersion.VERSION_11)
-        targetCompatibility(JavaVersion.VERSION_11)
+        sourceCompatibility(libs.versions.javaVersion.get())
+        targetCompatibility(libs.versions.javaVersion.get())
     }
 
     lint {
@@ -76,13 +74,6 @@ android {
     kapt {
         correctErrorTypes = true
     }
-}
-
-play {
-    serviceAccountCredentials.set(file("playStorePublishServiceCredentialsFile.json"))
-    track.set("internal")
-    resolutionStrategy.set(com.github.triplet.gradle.androidpublisher.ResolutionStrategy.IGNORE)
-    commit.set(false)
 }
 
 dependencies {

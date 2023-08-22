@@ -5,6 +5,7 @@ import io.homeassistant.companion.android.BuildConfig
 import io.homeassistant.companion.android.common.data.authentication.SessionState
 import io.homeassistant.companion.android.common.data.integration.DeviceRegistration
 import io.homeassistant.companion.android.common.data.integration.Entity
+import io.homeassistant.companion.android.common.data.integration.EntityExt
 import io.homeassistant.companion.android.common.data.prefs.WearPrefsRepository
 import io.homeassistant.companion.android.common.data.servers.ServerManager
 import io.homeassistant.companion.android.common.data.websocket.WebSocketState
@@ -31,10 +32,6 @@ class HomePresenterImpl @Inject constructor(
 ) : HomePresenter {
 
     companion object {
-        val toggleDomains = listOf(
-            "cover", "fan", "humidifier", "input_boolean", "light", "lock",
-            "media_player", "remote", "siren", "switch"
-        )
         val domainsWithNames = mapOf(
             "button" to commonR.string.buttons,
             "cover" to commonR.string.covers,
@@ -97,7 +94,7 @@ class HomePresenterImpl @Inject constructor(
                     "lock"
                 }
             }
-            in toggleDomains -> "toggle"
+            in EntityExt.DOMAINS_TOGGLE -> "toggle"
             else -> "turn_on"
         }
         try {
@@ -233,12 +230,20 @@ class HomePresenterImpl @Inject constructor(
         return serverManager.webSocketRepository().getEntityRegistryUpdates()
     }
 
-    override suspend fun getTileShortcuts(): List<SimplifiedEntity> {
-        return wearPrefsRepository.getTileShortcuts().map { SimplifiedEntity(it) }
+    override suspend fun getAllTileShortcuts(): Map<Int?, List<SimplifiedEntity>> {
+        return wearPrefsRepository.getAllTileShortcuts().mapValues { (_, entities) ->
+            entities.map {
+                SimplifiedEntity(it)
+            }
+        }
     }
 
-    override suspend fun setTileShortcuts(entities: List<SimplifiedEntity>) {
-        wearPrefsRepository.setTileShortcuts(entities.map { it.entityString })
+    override suspend fun getTileShortcuts(tileId: Int): List<SimplifiedEntity> {
+        return wearPrefsRepository.getTileShortcutsAndSaveTileId(tileId).map { SimplifiedEntity(it) }
+    }
+
+    override suspend fun setTileShortcuts(tileId: Int?, entities: List<SimplifiedEntity>) {
+        wearPrefsRepository.setTileShortcuts(tileId, entities.map { it.entityString })
     }
 
     override suspend fun getWearHapticFeedback(): Boolean {

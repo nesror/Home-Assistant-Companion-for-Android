@@ -9,6 +9,7 @@ import androidx.car.app.model.CarColor
 import androidx.car.app.model.CarIcon
 import androidx.car.app.model.GridItem
 import androidx.car.app.model.ItemList
+import androidx.lifecycle.LifecycleCoroutineScope
 import com.mikepenz.iconics.IconicsDrawable
 import com.mikepenz.iconics.typeface.library.community.material.CommunityMaterial
 import com.mikepenz.iconics.utils.sizeDp
@@ -20,15 +21,17 @@ import io.homeassistant.companion.android.common.data.integration.domain
 import io.homeassistant.companion.android.common.data.integration.getIcon
 import io.homeassistant.companion.android.common.data.prefs.PrefsRepository
 import io.homeassistant.companion.android.common.data.servers.ServerManager
+import io.homeassistant.companion.android.common.data.websocket.impl.entities.EntityRegistryResponse
 import io.homeassistant.companion.android.common.util.capitalize
+import io.homeassistant.companion.android.util.RegistriesDataHandler
 import io.homeassistant.companion.android.vehicle.ChangeServerScreen
 import io.homeassistant.companion.android.vehicle.DomainListScreen
 import io.homeassistant.companion.android.vehicle.EntityGridVehicleScreen
-import io.homeassistant.companion.android.vehicle.MainVehicleScreen
 import io.homeassistant.companion.android.vehicle.MapVehicleScreen
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.Locale
 
@@ -99,7 +102,7 @@ fun getNavigationGridItem(
                 MapVehicleScreen(
                     carContext,
                     integrationRepository,
-                    allEntities.map { it.values.filter { entity -> entity.domain in MainVehicleScreen.MAP_DOMAINS } }
+                    allEntities.map { it.values.filter { entity -> entity.domain in MAP_DOMAINS } }
                 )
             )
         }
@@ -114,12 +117,14 @@ fun getDomainList(
     serverManager: ServerManager,
     serverId: StateFlow<Int>,
     prefsRepository: PrefsRepository,
-    allEntities: Flow<Map<String, Entity<*>>>
+    allEntities: Flow<Map<String, Entity<*>>>,
+    entityRegistry: List<EntityRegistryResponse>?,
+    lifecycleScope: LifecycleCoroutineScope
 ): ItemList.Builder {
     val listBuilder = ItemList.Builder()
     domains.forEach { domain ->
         val friendlyDomain =
-            MainVehicleScreen.SUPPORTED_DOMAINS_WITH_STRING[domain]?.let { carContext.getString(it) }
+            SUPPORTED_DOMAINS_WITH_STRING[domain]?.let { carContext.getString(it) }
                 ?: domain.split("_").joinToString(" ") { word ->
                     word.capitalize(Locale.getDefault())
                 }
@@ -132,41 +137,60 @@ fun getDomainList(
             null
         ).getIcon(carContext)
 
-        listBuilder.addItem(
-            GridItem.Builder().apply {
-                if (icon != null) {
-                    setImage(
-                        CarIcon.Builder(
-                            IconicsDrawable(carContext, icon)
-                                .apply {
-                                    sizeDp = 64
-                                }.toAndroidIconCompat()
-                        )
-                            .setTint(CarColor.DEFAULT)
-                            .build()
-                    )
-                }
+        val entityList = allEntities.map {
+            it.values.filter { entity ->
+                entity.domain == domain && RegistriesDataHandler.getHiddenByForEntity(
+                    entity.entityId,
+                    entityRegistry
+                ) == null
             }
-                .setTitle(friendlyDomain)
-                .setOnClickListener {
-                    Log.i(TAG, "Domain:$domain clicked")
-                    screenManager.push(
-                        EntityGridVehicleScreen(
-                            carContext,
-                            serverManager,
-                            serverId,
-                            prefsRepository,
-                            serverManager.integrationRepository(serverId.value),
-                            friendlyDomain,
-                            domains,
-                            allEntities.map { it.values.filter { entity -> entity.domain == domain } },
-                            allEntities
-                        ) { }
-                    )
+        }
+        var domainIsEmpty = false
+        lifecycleScope.launch {
+            entityList.collect {
+                domainIsEmpty = it.isEmpty()
+            }
+        }
+        if (!domainIsEmpty) {
+            listBuilder.addItem(
+                GridItem.Builder().apply {
+                    if (icon != null) {
+                        setImage(
+                            CarIcon.Builder(
+                                IconicsDrawable(carContext, icon)
+                                    .apply {
+                                        sizeDp = 64
+                                    }.toAndroidIconCompat()
+                            )
+                                .setTint(CarColor.DEFAULT)
+                                .build()
+                        )
+                    }
                 }
-                .build()
-        )
+                    .setTitle(friendlyDomain)
+                    .setOnClickListener {
+                        Log.i(TAG, "Domain:$domain clicked")
+                        screenManager.push(
+                            EntityGridVehicleScreen(
+                                carContext,
+                                serverManager,
+                                serverId,
+                                prefsRepository,
+                                serverManager.integrationRepository(serverId.value),
+                                friendlyDomain,
+                                entityRegistry,
+                                domains,
+                                entityList,
+                                allEntities
+                            ) { }
+                        )
+                    }
+                    .build()
+            )
+        }
     }
+    listBuilder.setNoItemsMessage(carContext.getString(R.string.no_supported_entities))
+
     return listBuilder
 }
 
@@ -178,7 +202,8 @@ fun getDomainsGridItem(
     integrationRepository: IntegrationRepository,
     serverId: StateFlow<Int>,
     allEntities: Flow<Map<String, Entity<*>>>,
-    prefsRepository: PrefsRepository
+    prefsRepository: PrefsRepository,
+    entityRegistry: List<EntityRegistryResponse>?
 ): GridItem.Builder {
     return GridItem.Builder().apply {
         setTitle(carContext.getString(R.string.all_entities))
@@ -203,7 +228,8 @@ fun getDomainsGridItem(
                     integrationRepository,
                     serverId,
                     allEntities,
-                    prefsRepository
+                    prefsRepository,
+                    entityRegistry
                 )
             )
         }

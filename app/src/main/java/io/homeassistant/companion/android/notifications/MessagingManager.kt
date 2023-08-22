@@ -76,7 +76,6 @@ import io.homeassistant.companion.android.sensors.NotificationSensorManager
 import io.homeassistant.companion.android.sensors.SensorReceiver
 import io.homeassistant.companion.android.settings.SettingsActivity
 import io.homeassistant.companion.android.util.UrlUtil
-import io.homeassistant.companion.android.util.cancelGroupIfNeeded
 import io.homeassistant.companion.android.vehicle.HaCarAppService
 import io.homeassistant.companion.android.websocket.WebsocketManager
 import io.homeassistant.companion.android.webview.WebViewActivity
@@ -155,7 +154,6 @@ class MessagingManager @Inject constructor(
         const val COMMAND_BLUETOOTH = "command_bluetooth"
         const val COMMAND_SCREEN_ON = "command_screen_on"
         const val COMMAND_MEDIA = "command_media"
-        const val COMMAND_UPDATE_SENSORS = "command_update_sensors"
         const val COMMAND_HIGH_ACCURACY_MODE = "command_high_accuracy_mode"
         const val COMMAND_ACTIVITY = "command_activity"
         const val COMMAND_WEBVIEW = "command_webview"
@@ -214,7 +212,7 @@ class MessagingManager @Inject constructor(
             COMMAND_WEBVIEW,
             COMMAND_SCREEN_ON,
             COMMAND_MEDIA,
-            COMMAND_UPDATE_SENSORS,
+            DeviceCommandData.COMMAND_UPDATE_SENSORS,
             COMMAND_LAUNCH_APP,
             COMMAND_APP_LOCK,
             COMMAND_PERSISTENT_CONNECTION,
@@ -298,6 +296,10 @@ class MessagingManager @Inject constructor(
         val serverId = jsonData[NotificationData.WEBHOOK_ID]?.let { webhookId ->
             serverManager.getServer(webhookId = webhookId)?.id
         } ?: ServerManager.SERVER_ID_ACTIVE
+        if (serverManager.getServer(serverId) == null) {
+            Log.w(TAG, "Received notification but no server for it, discarding")
+            return
+        }
         jsonData = jsonData + mutableMapOf<String, String>().apply { put(THIS_SERVER_ID, serverId.toString()) }
 
         mainScope.launch {
@@ -478,7 +480,7 @@ class MessagingManager @Inject constructor(
                                 sendNotification(jsonData)
                             }
                         }
-                        COMMAND_UPDATE_SENSORS -> SensorReceiver.updateAllSensors(context)
+                        DeviceCommandData.COMMAND_UPDATE_SENSORS -> SensorReceiver.updateAllSensors(context)
                         COMMAND_LAUNCH_APP -> {
                             if (!jsonData[PACKAGE_NAME].isNullOrEmpty()) {
                                 handleDeviceCommands(jsonData)
@@ -762,7 +764,7 @@ class MessagingManager @Inject constructor(
                 }
             }
             COMMAND_PERSISTENT_CONNECTION -> {
-                togglePersistentConnection(data[PERSISTENT].toString())
+                togglePersistentConnection(data[PERSISTENT].toString(), serverId.toIntOrNull() ?: ServerManager.SERVER_ID_ACTIVE)
             }
             COMMAND_AUTO_SCREEN_BRIGHTNESS, COMMAND_SCREEN_BRIGHTNESS_LEVEL, COMMAND_SCREEN_OFF_TIMEOUT -> {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -1132,9 +1134,8 @@ class MessagingManager @Inject constructor(
         data: Map<String, String>
     ) {
         // Use importance property for legacy priority support
-        val priority = data[NotificationData.IMPORTANCE]
 
-        when (priority) {
+        when (data[NotificationData.IMPORTANCE]) {
             "high" -> {
                 builder.priority = NotificationCompat.PRIORITY_HIGH
             }
@@ -1367,7 +1368,7 @@ class MessagingManager @Inject constructor(
 
     private fun Bitmap.getCompressedFrame(): Bitmap? {
         var newWidth = 480
-        var newHeight = 0
+        val newHeight: Int
         // If already smaller than 480p do not scale else scale
         if (width < newWidth) {
             newWidth = width
@@ -1488,7 +1489,12 @@ class MessagingManager @Inject constructor(
                 context.packageManager.getLaunchIntentForPackage(uri.substringAfter(APP_PREFIX))
             }
             uri.startsWith(INTENT_PREFIX) -> {
-                Intent.parseUri(uri, Intent.URI_INTENT_SCHEME)
+                try {
+                    Intent.parseUri(uri, Intent.URI_INTENT_SCHEME)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Unable to parse intent URI", e)
+                    null
+                }
             }
             uri.startsWith(SETTINGS_PREFIX) -> {
                 if (uri.substringAfter(SETTINGS_PREFIX) == NOTIFICATION_HISTORY) {
@@ -1811,28 +1817,28 @@ class MessagingManager @Inject constructor(
         }
     }
 
-    private fun togglePersistentConnection(mode: String) {
+    private fun togglePersistentConnection(mode: String, serverId: Int) {
         when (mode.uppercase()) {
             WebsocketSetting.NEVER.name -> {
-                settingsDao.get(0)?.let {
+                settingsDao.get(serverId)?.let {
                     it.websocketSetting = WebsocketSetting.NEVER
                     settingsDao.update(it)
                 }
             }
             WebsocketSetting.ALWAYS.name -> {
-                settingsDao.get(0)?.let {
+                settingsDao.get(serverId)?.let {
                     it.websocketSetting = WebsocketSetting.ALWAYS
                     settingsDao.update(it)
                 }
             }
             WebsocketSetting.HOME_WIFI.name -> {
-                settingsDao.get(0)?.let {
+                settingsDao.get(serverId)?.let {
                     it.websocketSetting = WebsocketSetting.HOME_WIFI
                     settingsDao.update(it)
                 }
             }
             WebsocketSetting.SCREEN_ON.name -> {
-                settingsDao.get(0)?.let {
+                settingsDao.get(serverId)?.let {
                     it.websocketSetting = WebsocketSetting.SCREEN_ON
                     settingsDao.update(it)
                 }

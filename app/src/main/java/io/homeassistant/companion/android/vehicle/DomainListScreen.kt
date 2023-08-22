@@ -15,6 +15,8 @@ import io.homeassistant.companion.android.common.data.integration.IntegrationRep
 import io.homeassistant.companion.android.common.data.integration.domain
 import io.homeassistant.companion.android.common.data.prefs.PrefsRepository
 import io.homeassistant.companion.android.common.data.servers.ServerManager
+import io.homeassistant.companion.android.common.data.websocket.impl.entities.EntityRegistryResponse
+import io.homeassistant.companion.android.util.vehicle.SUPPORTED_DOMAINS
 import io.homeassistant.companion.android.util.vehicle.getDomainList
 import io.homeassistant.companion.android.util.vehicle.nativeModeActionStrip
 import kotlinx.coroutines.flow.Flow
@@ -28,7 +30,8 @@ class DomainListScreen(
     val integrationRepository: IntegrationRepository,
     private val serverId: StateFlow<Int>,
     private val allEntities: Flow<Map<String, Entity<*>>>,
-    private val prefsRepository: PrefsRepository
+    private val prefsRepository: PrefsRepository,
+    private val entityRegistry: List<EntityRegistryResponse>?
 ) : BaseVehicleScreen(carContext) {
 
     companion object {
@@ -36,6 +39,7 @@ class DomainListScreen(
     }
 
     private val domains = mutableSetOf<String>()
+    private var domainsAdded = false
 
     override fun onDrivingOptimizedChanged(newState: Boolean) {
         invalidate()
@@ -47,13 +51,13 @@ class DomainListScreen(
                 val newDomains = entities.values
                     .map { it.domain }
                     .distinct()
-                    .filter { it in MainVehicleScreen.SUPPORTED_DOMAINS }
+                    .filter { it in SUPPORTED_DOMAINS }
                     .toSet()
-                if (newDomains.size != domains.size || newDomains != domains) {
-                    domains.clear()
-                    domains.addAll(newDomains)
-                    invalidate()
-                }
+                val invalidate = newDomains.size != domains.size || newDomains != domains || !domainsAdded
+                domains.clear()
+                domains.addAll(newDomains)
+                domainsAdded = true
+                if (invalidate) invalidate()
             }
         }
     }
@@ -67,7 +71,9 @@ class DomainListScreen(
             serverManager,
             serverId,
             prefsRepository,
-            allEntities
+            allEntities,
+            entityRegistry,
+            lifecycleScope
         )
 
         return GridTemplate.Builder().apply {
@@ -77,7 +83,7 @@ class DomainListScreen(
                 setActionStrip(nativeModeActionStrip(carContext))
             }
             val domainBuild = domainList.build()
-            if (domainBuild.items.isEmpty()) {
+            if (!domainsAdded) {
                 setLoading(true)
             } else {
                 setLoading(false)

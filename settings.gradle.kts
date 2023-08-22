@@ -1,10 +1,11 @@
-
 include(":common", ":app")
 
 rootProject.name = "home-assistant-android"
 
 pluginManagement {
     repositories {
+        // maven { setUrl("https://mirrors.cloud.tencent.com/gradle/") }
+        //maven { setUrl("https://mirrors.cloud.tencent.com/nexus/repository/maven-public/") }
         gradlePluginPortal()
         google()
     }
@@ -25,6 +26,8 @@ extensions.configure<org.ajoberstar.reckon.gradle.ReckonExtension> {
 
 dependencyResolutionManagement {
     repositories {
+        //maven { setUrl("https://mirrors.cloud.tencent.com/gradle/") }
+        //maven { setUrl("https://mirrors.cloud.tencent.com/nexus/repository/maven-public/") }
         mavenCentral()
         google()
         maven("https://jitpack.io")

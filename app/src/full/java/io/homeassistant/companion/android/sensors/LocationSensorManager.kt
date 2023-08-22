@@ -147,9 +147,9 @@ class LocationSensorManager : LocationSensorManagerBase() {
         private var isBackgroundLocationSetup = false
         private var isZoneLocationSetup = false
 
-        private var lastLocationSend = 0L
-        private var lastLocationReceived = 0L
-        private var lastUpdateLocation = ""
+        private var lastLocationSend = mutableMapOf<Int, Long>()
+        private var lastLocationReceived = mutableMapOf<Int, Long>()
+        private var lastUpdateLocation = mutableMapOf<Int, String?>()
 
         private var zones: Array<Entity<ZoneAttributes>> = emptyArray()
         private var zonesLastReceived = 0L
@@ -876,7 +876,10 @@ class LocationSensorManager : LocationSensorManagerBase() {
 
     private fun handleLocationUpdate(intent: Intent) {
         Log.d(TAG, "Received location update.")
-        lastLocationReceived = System.currentTimeMillis()
+        val serverIds = getEnabledServers(latestContext, backgroundLocation)
+        serverIds.forEach {
+            lastLocationReceived[it] = System.currentTimeMillis()
+        }
         if (mLocationClient != null) {
             mLocationClient?.startLocation()
         } else {
@@ -950,7 +953,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
 //            return
 //        }
 
-        if (location.time < lastLocationSend || (now - location.time) > 320000) {
+        if (location.time < (lastLocationSend[serverId]?:0) || (now - location.time) > 320000) {
             Log.d(
                 TAG,
                 "Skipping old location update since time is before the last one we sent, received: ${location.time} last sent: $lastLocationSend"
@@ -984,8 +987,8 @@ class LocationSensorManager : LocationSensorManagerBase() {
 //            )
 //            return
 //        }
-        lastLocationSend = now
-        lastUpdateLocation = updateLocationString
+        lastLocationSend[serverId] = now
+        lastUpdateLocation[serverId] = updateLocationString
         lastTime2 = System.currentTimeMillis()
         getGeocodedLocation(location)
         checkGps(wifi)

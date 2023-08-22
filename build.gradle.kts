@@ -11,7 +11,7 @@ plugins {
     alias(libs.plugins.hilt).apply(false)
     alias(libs.plugins.kotlin.kapt).apply(false)
     alias(libs.plugins.kotlin.parcelize).apply(false)
-    classpath("com.google.firebase:firebase-crashlytics-gradle:2.9.6")
+    alias(libs.plugins.firebase.crashlytics).apply(false)
 }
 
 allprojects {

@@ -10,7 +10,7 @@ plugins {
     alias(libs.plugins.firebase.appdistribution)
     alias(libs.plugins.google.services)
     alias(libs.plugins.hilt)
-    id("com.google.firebase.crashlytics")
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 android {
@@ -110,14 +110,14 @@ android {
         defaultConfig.buildConfigField("String[]", "APPLICATION_IDS", "{$values}")
     }
 
-    playConfigs {
-//        register("minimal") {
+//    playConfigs {
+////        register("minimal") {
+////            enabled.set(false)
+////        }
+//        register("full") {
 //            enabled.set(false)
 //        }
-        register("full") {
-            enabled.set(false)
-        }
-    }
+//    }
 
     testOptions {
         unitTests.isReturnDefaultValues = true

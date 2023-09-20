@@ -47,51 +47,55 @@ object UpdateUtil {
             return
         }
 
-        val formBody: RequestBody = FormBody.Builder()
-            .add("_api_key", context.getAppMetaDataString("pgy_api_key"))
-            .add("appKey", "8a601dcac3098f0d5c89fa9fe416ca94")
-            .add("buildVersion", BuildConfig.VERSION_NAME)
-            .build()
-        val request = Request.Builder().apply {
-            url("https://www.pgyer.com/apiv2/app/check")
-            post(formBody)
-        }.build()
-        okHttpClient.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                Log.e("checkNew==>", e.toString())
-                githubCheckNew(context, okHttpClient)
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                val res = response.body?.string()
-                if (res.isNullOrEmpty()) {
+        try {
+            val formBody: RequestBody = FormBody.Builder()
+                .add("_api_key", context.getAppMetaDataString("pgy_api_key"))
+                .add("appKey", "8a601dcac3098f0d5c89fa9fe416ca94")
+                .add("buildVersion", BuildConfig.VERSION_NAME)
+                .build()
+            val request = Request.Builder().apply {
+                url("https://www.pgyer.com/apiv2/app/check")
+                post(formBody)
+            }.build()
+            okHttpClient.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    Log.e("checkNew==>", e.toString())
                     githubCheckNew(context, okHttpClient)
-                    return
                 }
-                //Log.e("onResponse==>", res)
-                val jsonObject = JSONObject(res)
-                if (jsonObject.getInt("code") != 0) {
-                    githubCheckNew(context, okHttpClient)
-                    return
-                }
-                val dataObject = jsonObject.getJSONObject("data")
-                val buildHaveNewVersion = dataObject.getBoolean("buildHaveNewVersion")
-                if (!buildHaveNewVersion) return
-                val downloadURL = dataObject.getString("downloadURL")
-                val ver = dataObject.getString("buildVersion")
-                val desc = try {
-                    dataObject.getString("buildUpdateDescription")
-                } catch (e: Exception) {
-                    "有新版本了！"
-                }
-                val updateInfo = UpdateInfo(ver, desc, downloadURL)
-                val intent = Intent(context, UpdateActivity::class.java)
-                intent.putExtra(UpdateActivity.UPDATE_INFO, updateInfo)
-                context.startActivity(intent)
-                context.overridePendingTransition(0, 0)
-            }
 
-        })
+                override fun onResponse(call: Call, response: Response) {
+                    val res = response.body?.string()
+                    if (res.isNullOrEmpty()) {
+                        githubCheckNew(context, okHttpClient)
+                        return
+                    }
+                    //Log.e("onResponse==>", res)
+                    val jsonObject = JSONObject(res)
+                    if (jsonObject.getInt("code") != 0) {
+                        githubCheckNew(context, okHttpClient)
+                        return
+                    }
+                    val dataObject = jsonObject.getJSONObject("data")
+                    val buildHaveNewVersion = dataObject.getBoolean("buildHaveNewVersion")
+                    if (!buildHaveNewVersion) return
+                    val downloadURL = dataObject.getString("downloadURL")
+                    val ver = dataObject.getString("buildVersion")
+                    val desc = try {
+                        dataObject.getString("buildUpdateDescription")
+                    } catch (e: Exception) {
+                        "有新版本了！"
+                    }
+                    val updateInfo = UpdateInfo(ver, desc, downloadURL)
+                    val intent = Intent(context, UpdateActivity::class.java)
+                    intent.putExtra(UpdateActivity.UPDATE_INFO, updateInfo)
+                    context.startActivity(intent)
+                    context.overridePendingTransition(0, 0)
+                }
+
+            })
+        } catch (e: Exception) {
+            githubCheckNew(context, okHttpClient)
+        }
     }
 
     private fun githubCheckNew(context: Activity, okHttpClient: OkHttpClient) {
@@ -103,42 +107,45 @@ object UpdateUtil {
             ).show()
         }
 
-        val request = Request.Builder().apply {
-            url("https://github.com/nesror/Home-Assistant-Companion-for-Android/releases/latest")
-        }.build()
-        okHttpClient.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                Log.e("checkNew==>", e.toString())
-                runBlocking(Dispatchers.Main) {
-                    Toast.makeText(
-                        context,
-                        "有新版本了！",
-                        Toast.LENGTH_SHORT
-                    ).show()
+        try {
+            val request = Request.Builder().apply {
+                url("https://github.com/nesror/Home-Assistant-Companion-for-Android/releases/latest")
+            }.build()
+            okHttpClient.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    Log.e("checkNew==>", e.toString())
+                    runBlocking(Dispatchers.Main) {
+                        Toast.makeText(
+                            context,
+                            "有新版本了！",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 }
-            }
 
-            override fun onResponse(call: Call, response: Response) {
-                val url = response.request.url.toString()
-                val ver = url.split("/").last()
-                Log.d("checkNew==>ver:", ver)
-                if (!BuildConfig.VERSION_NAME.contains(ver)) {
-                    val apkUrl =
-                        "https://github.com/nesror/Home-Assistant-Companion-for-Android/releases/download/$ver/app-full-release.apk"
-                    Log.d("checkNew==>apkUrl:", apkUrl)
-                    val updateInfo = UpdateInfo(
-                        ver, "如果无法直接更新，可以关注公众号进行更新！\n" +
-                                "公众号：UnknownExceptions 回复 最新版 获取新版本\n" +
-                                "也可回复HA获取全新Flutter版本", apkUrl
-                    )
-                    val intent = Intent(context, UpdateActivity::class.java)
-                    intent.putExtra(UpdateActivity.UPDATE_INFO, updateInfo)
-                    context.startActivity(intent)
-                    context.overridePendingTransition(0, 0)
+                override fun onResponse(call: Call, response: Response) {
+                    val url = response.request.url.toString()
+                    val ver = url.split("/").last()
+                    Log.d("checkNew==>ver:", ver)
+                    if (!BuildConfig.VERSION_NAME.contains(ver)) {
+                        val apkUrl =
+                            "https://github.com/nesror/Home-Assistant-Companion-for-Android/releases/download/$ver/app-full-release.apk"
+                        Log.d("checkNew==>apkUrl:", apkUrl)
+                        val updateInfo = UpdateInfo(
+                            ver, "如果无法直接更新，可以关注公众号进行更新！\n" +
+                                    "公众号：UnknownExceptions 回复 最新版 获取新版本\n" +
+                                    "也可回复HA获取全新Flutter版本", apkUrl
+                        )
+                        val intent = Intent(context, UpdateActivity::class.java)
+                        intent.putExtra(UpdateActivity.UPDATE_INFO, updateInfo)
+                        context.startActivity(intent)
+                        context.overridePendingTransition(0, 0)
+                    }
                 }
-            }
 
-        })
+            })
+        } catch (e: Exception) {
+        }
     }
 
     fun getActivityFromView(view: View): Activity? {

@@ -228,7 +228,8 @@
 
         <activity
             android:name=".update.UpdateActivity"
-            android:theme="@style/update_TranslucentTheme"/>
+            android:theme="@style/update_TranslucentTheme"
+            android:exported="false"/>
 
         <service android:name=".sensors.NotificationSensorManager"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"

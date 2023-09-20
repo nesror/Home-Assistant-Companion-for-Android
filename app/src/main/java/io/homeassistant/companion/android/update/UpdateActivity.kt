@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.DownloadManager
 import android.content.Context
 import android.content.IntentFilter
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Message
@@ -102,7 +103,11 @@ class UpdateActivity : AppCompatActivity() {
         if (!isRegisterReceiver) {
             val receiver = DownloadReceiver()
             val intentFilter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
-            this.registerReceiver(receiver, intentFilter)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                this.registerReceiver(receiver, intentFilter,RECEIVER_NOT_EXPORTED)
+            }else{
+                this.registerReceiver(receiver, intentFilter)
+            }
             isRegisterReceiver = true
         }
     }

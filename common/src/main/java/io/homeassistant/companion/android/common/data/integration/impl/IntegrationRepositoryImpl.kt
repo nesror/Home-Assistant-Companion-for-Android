@@ -56,6 +56,7 @@ class IntegrationRepositoryImpl @AssistedInject constructor(
 
         private const val PREF_APP_VERSION = "app_version" // Note: _not_ server-specific
         private const val PREF_PUSH_TOKEN = "push_token" // Note: _not_ server-specific
+        private const val PREF_ORPHANED_THREAD_BORDER_AGENT_IDS = "orphaned_thread_border_agent_ids" // Note: _not_ server-specific
 
         private const val PREF_CHECK_SENSOR_REGISTRATION_NEXT = "sensor_reg_last"
         private const val PREF_SESSION_TIMEOUT = "session_timeout"
@@ -64,6 +65,7 @@ class IntegrationRepositoryImpl @AssistedInject constructor(
         private const val PREF_SEC_WARNING_NEXT = "sec_warning_last"
         private const val PREF_LAST_USED_PIPELINE_ID = "last_used_pipeline"
         private const val PREF_LAST_USED_PIPELINE_STT = "last_used_pipeline_stt"
+        private const val PREF_THREAD_BORDER_AGENT_IDS = "thread_border_agent_ids"
         private const val TAG = "IntegrationRepository"
         private const val RATE_LIMIT_URL = BuildConfig.RATE_LIMIT_URL
 
@@ -115,7 +117,7 @@ class IntegrationRepositoryImpl @AssistedInject constructor(
         }
     }
 
-    override suspend fun updateRegistration(deviceRegistration: DeviceRegistration) {
+    override suspend fun updateRegistration(deviceRegistration: DeviceRegistration, allowReregistration: Boolean) {
         val request =
             IntegrationRequest(
                 "update_registration",
@@ -124,9 +126,20 @@ class IntegrationRepositoryImpl @AssistedInject constructor(
         var causeException: Exception? = null
         for (it in server.connection.getApiUrls()) {
             try {
-                if (integrationService.callWebhook(it.toHttpUrlOrNull()!!, request).isSuccessful) {
-                    persistDeviceRegistration(deviceRegistration)
-                    return
+                val response = integrationService.callWebhook(it.toHttpUrlOrNull()!!, request)
+                // The server should return a body with the registration, but might return:
+                // 200 with empty body for broken direct webhook
+                // 404 for broken cloudhook
+                // 410 for missing config entry
+                if (response.isSuccessful) {
+                    if (response.code() == 200 && (response.body()?.contentLength() ?: 0) == 0L) {
+                        throw IllegalStateException("update_registration returned empty body")
+                    } else {
+                        persistDeviceRegistration(deviceRegistration)
+                        return
+                    }
+                } else if (response.code() == 404 || response.code() == 410) {
+                    throw IllegalStateException("update_registration returned code ${response.code()}")
                 }
             } catch (e: Exception) {
                 if (causeException == null) causeException = e
@@ -135,7 +148,16 @@ class IntegrationRepositoryImpl @AssistedInject constructor(
         }
 
         if (causeException != null) {
-            throw IntegrationException(causeException)
+            if (allowReregistration && (causeException is IllegalStateException)) {
+                Log.w(TAG, "Device registration broken, reregistering", causeException)
+                try {
+                    registerDevice(deviceRegistration)
+                } catch (e: Exception) {
+                    throw IntegrationException(e)
+                }
+            } else {
+                throw IntegrationException(causeException)
+            }
         } else {
             throw IntegrationException("Error calling integration request update_registration")
         }
@@ -169,6 +191,15 @@ class IntegrationRepositoryImpl @AssistedInject constructor(
         localStorage.remove("${serverId}_$PREF_SEC_WARNING_NEXT")
         localStorage.remove("${serverId}_$PREF_LAST_USED_PIPELINE_ID")
         localStorage.remove("${serverId}_$PREF_LAST_USED_PIPELINE_STT")
+
+        // Thread credentials are managed in the app module and can't be deleted now, so store them
+        val threadBorderAgentIds = getThreadBorderAgentIds()
+        if (threadBorderAgentIds.any()) {
+            val orphanedBorderAgentIds = localStorage.getStringSet(PREF_ORPHANED_THREAD_BORDER_AGENT_IDS).orEmpty()
+            localStorage.putStringSet(PREF_ORPHANED_THREAD_BORDER_AGENT_IDS, orphanedBorderAgentIds + threadBorderAgentIds.toSet())
+        }
+        localStorage.remove("${serverId}_$PREF_THREAD_BORDER_AGENT_IDS")
+
         // app version and push token is device-specific
     }
 
@@ -563,6 +594,20 @@ class IntegrationRepositoryImpl @AssistedInject constructor(
     override suspend fun setLastUsedPipeline(pipelineId: String, supportsStt: Boolean) {
         localStorage.putString("${serverId}_$PREF_LAST_USED_PIPELINE_ID", pipelineId)
         localStorage.putBoolean("${serverId}_$PREF_LAST_USED_PIPELINE_STT", supportsStt)
+    }
+
+    override suspend fun getThreadBorderAgentIds(): List<String> =
+        localStorage.getStringSet("${serverId}_$PREF_THREAD_BORDER_AGENT_IDS").orEmpty().toList()
+
+    override suspend fun setThreadBorderAgentIds(ids: List<String>) {
+        localStorage.putStringSet("${serverId}_$PREF_THREAD_BORDER_AGENT_IDS", ids.toSet())
+    }
+
+    override suspend fun getOrphanedThreadBorderAgentIds(): List<String> =
+        localStorage.getStringSet(PREF_ORPHANED_THREAD_BORDER_AGENT_IDS).orEmpty().toList()
+
+    override suspend fun clearOrphanedThreadBorderAgentIds() {
+        localStorage.remove(PREF_ORPHANED_THREAD_BORDER_AGENT_IDS)
     }
 
     override suspend fun getEntities(): List<Entity<Any>>? {

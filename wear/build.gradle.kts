@@ -19,12 +19,6 @@ android {
         versionName = project.version.toString()
         // We add 1 because the app and wear versions need to have different version codes.
         versionCode = (System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1) + 1
-
-        javaCompileOptions {
-            annotationProcessorOptions {
-                arguments(mapOf("room.incremental" to "true"))
-            }
-        }
     }
 
     buildFeatures {
@@ -114,9 +108,10 @@ dependencies {
     implementation(libs.wear.compose.material)
     implementation(libs.wear.compose.navigation)
 
+    implementation(libs.horologist.layout)
+
     implementation(libs.guava)
-    implementation(libs.wear.tiles)
-    implementation(libs.wear.tiles.material)
+    implementation(libs.bundles.wear.tiles)
 
     implementation(libs.androidx.watchface.complications.data.source.ktx)
 

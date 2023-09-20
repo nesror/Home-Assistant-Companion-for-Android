@@ -20,12 +20,13 @@ import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.ToggleChip
 import androidx.wear.compose.material.ToggleChipDefaults
 import com.mikepenz.iconics.compose.Image
-import com.mikepenz.iconics.typeface.library.community.material.CommunityMaterial
 import io.homeassistant.companion.android.common.R
 import io.homeassistant.companion.android.common.data.integration.Entity
 import io.homeassistant.companion.android.common.data.integration.EntityExt
 import io.homeassistant.companion.android.common.data.integration.domain
 import io.homeassistant.companion.android.common.data.integration.getIcon
+import io.homeassistant.companion.android.common.data.integration.isActive
+import io.homeassistant.companion.android.common.util.STATE_UNAVAILABLE
 import io.homeassistant.companion.android.theme.wearColorPalette
 import io.homeassistant.companion.android.util.WearToggleChip
 import io.homeassistant.companion.android.util.onEntityClickedFeedback
@@ -47,7 +48,7 @@ fun EntityUi(
     val friendlyName = attributes["friendly_name"].toString()
 
     if (entity.domain in EntityExt.DOMAINS_TOGGLE) {
-        val isChecked = entity.state in listOf("on", "locked", "open", "opening")
+        val isChecked = entity.isActive()
         ToggleChip(
             checked = isChecked,
             onCheckedChange = {
@@ -58,7 +59,7 @@ fun EntityUi(
                 .fillMaxWidth(),
             appIcon = {
                 Image(
-                    asset = iconBitmap ?: CommunityMaterial.Icon.cmd_bookmark,
+                    asset = iconBitmap,
                     colorFilter = ColorFilter.tint(wearColorPalette.onSurface)
                 )
             },
@@ -86,7 +87,7 @@ fun EntityUi(
                     }
                 )
             },
-            enabled = entity.state != "unavailable",
+            enabled = entity.state != STATE_UNAVAILABLE,
             toggleControl = {
                 Icon(
                     imageVector = ToggleChipDefaults.switchIcon(isChecked),
@@ -105,7 +106,7 @@ fun EntityUi(
                 .fillMaxWidth(),
             icon = {
                 Image(
-                    asset = iconBitmap ?: CommunityMaterial.Icon.cmd_bookmark,
+                    asset = iconBitmap,
                     colorFilter = ColorFilter.tint(wearColorPalette.onSurface)
                 )
             },
@@ -133,7 +134,7 @@ fun EntityUi(
                     }
                 )
             },
-            enabled = entity.state != "unavailable",
+            enabled = entity.state != STATE_UNAVAILABLE,
             onClick = {
                 onEntityClicked(entity.entityId, entity.state)
                 onEntityClickedFeedback(isToastEnabled, isHapticEnabled, context, friendlyName, haptic)

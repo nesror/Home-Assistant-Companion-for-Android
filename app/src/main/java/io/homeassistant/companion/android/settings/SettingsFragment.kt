@@ -201,6 +201,9 @@ class SettingsFragment(
             return@setOnPreferenceClickListener true
         }
 
+        val isAutomotive =
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && requireContext().packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+
         if (Build.MODEL != "Quest") {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
                 findPreference<PreferenceCategory>("shortcuts")?.let {
@@ -228,7 +231,7 @@ class SettingsFragment(
                 }
             }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (!isAutomotive && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 findPreference<PreferenceCategory>("device_controls")?.let {
                     it.isVisible = true
                 }
@@ -355,7 +358,6 @@ class SettingsFragment(
             return@setOnPreferenceClickListener true
         }
 
-        val isAutomotive = requireContext().packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
         findPreference<PreferenceCategory>("android_auto")?.let {
             it.isVisible =
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && (BuildConfig.FLAVOR == "full" || isAutomotive)

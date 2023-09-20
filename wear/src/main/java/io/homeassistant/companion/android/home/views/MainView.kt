@@ -24,18 +24,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.Chip
 import androidx.wear.compose.material.ChipDefaults
 import androidx.wear.compose.material.CircularProgressIndicator
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.PositionIndicator
 import androidx.wear.compose.material.Scaffold
-import androidx.wear.compose.material.ScalingLazyListState
 import androidx.wear.compose.material.Text
-import androidx.wear.compose.material.rememberScalingLazyListState
 import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.community.material.CommunityMaterial
 import io.homeassistant.companion.android.common.data.integration.Entity
+import io.homeassistant.companion.android.common.util.STATE_UNKNOWN
 import io.homeassistant.companion.android.home.MainViewModel
 import io.homeassistant.companion.android.theme.WearAppTheme
 import io.homeassistant.companion.android.theme.wearColorPalette
@@ -58,7 +58,7 @@ fun MainView(
     isHapticEnabled: Boolean,
     isToastEnabled: Boolean
 ) {
-    val scalingLazyListState: ScalingLazyListState = rememberScalingLazyListState()
+    val scalingLazyListState = rememberScalingLazyListState()
 
     var expandedFavorites: Boolean by rememberSaveable { mutableStateOf(true) }
 
@@ -96,7 +96,7 @@ fun MainView(
                                         .fillMaxWidth(),
                                     icon = {
                                         Image(
-                                            asset = getIcon(cached?.icon, favoriteEntityID.split(".")[0], context) ?: CommunityMaterial.Icon.cmd_bookmark,
+                                            asset = getIcon(cached?.icon, favoriteEntityID.split(".")[0], context),
                                             colorFilter = ColorFilter.tint(wearColorPalette.onSurface)
                                         )
                                     },
@@ -108,7 +108,7 @@ fun MainView(
                                         )
                                     },
                                     onClick = {
-                                        onEntityClicked(favoriteEntityID, "unknown")
+                                        onEntityClicked(favoriteEntityID, STATE_UNKNOWN)
                                         onEntityClickedFeedback(isToastEnabled, isHapticEnabled, context, favoriteEntityID, haptic)
                                     },
                                     colors = ChipDefaults.secondaryChipColors()
@@ -273,7 +273,7 @@ fun MainView(
                                                     "",
                                                     domain,
                                                     context
-                                                )?.let { Image(asset = it) }
+                                                ).let { Image(asset = it) }
                                             },
                                             label = {
                                                 Text(text = mainViewModel.stringForDomain(domain)!!)

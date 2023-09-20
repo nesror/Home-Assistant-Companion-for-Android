@@ -126,6 +126,7 @@ class WebViewActivity : BaseActivity(), io.homeassistant.companion.android.webvi
     companion object {
         const val EXTRA_PATH = "path"
         const val EXTRA_SERVER = "server"
+        const val EXTRA_SHOW_WHEN_LOCKED = "show_when_locked"
 
         private const val TAG = "WebviewActivity"
         private const val APP_PREFIX = "app://"
@@ -212,6 +213,7 @@ class WebViewActivity : BaseActivity(), io.homeassistant.companion.android.webvi
     private var firstAuthTime: Long = 0
     private var resourceURL: String = ""
     private var appLocked = true
+    private var unlockingApp = false
     private var exoPlayer: ExoPlayer? = null
     private var isExoFullScreen = false
     private var exoTop = 0 // These margins are from the DOM and scaled to screen
@@ -230,6 +232,14 @@ class WebViewActivity : BaseActivity(), io.homeassistant.companion.android.webvi
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
+        if (
+            intent.extras?.containsKey(EXTRA_SHOW_WHEN_LOCKED) == true &&
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1
+        ) {
+            // Allow showing this on the lock screen when using device controls panel
+            setShowWhenLocked(intent.extras?.getBoolean(EXTRA_SHOW_WHEN_LOCKED) ?: false)
+        }
+
         super.onCreate(savedInstanceState)
 
         binding = ActivityWebviewBinding.inflate(layoutInflater)
@@ -1031,6 +1041,7 @@ class WebViewActivity : BaseActivity(), io.homeassistant.companion.android.webvi
             }
             else -> Log.d(TAG, "Authentication failed, retry attempts allowed")
         }
+        unlockingApp = false
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -1040,7 +1051,10 @@ class WebViewActivity : BaseActivity(), io.homeassistant.companion.android.webvi
             val path = intent.getStringExtra(EXTRA_PATH)
             presenter.onViewReady(path)
             if (path?.startsWith("entityId:") == true) {
-                moreInfoEntity = path.substringAfter("entityId:")
+                // Get the entity ID from a string formatted "entityId:domain.entity"
+                // https://github.com/home-assistant/core/blob/dev/homeassistant/core.py#L159
+                val pattern = "(?<=^entityId:)((?!.+__)(?!_)[\\da-z_]+(?<!_)\\.(?!_)[\\da-z_]+(?<!_)$)".toRegex()
+                moreInfoEntity = pattern.find(path)?.value ?: ""
             }
             intent.removeExtra(EXTRA_PATH)
 
@@ -1056,7 +1070,10 @@ class WebViewActivity : BaseActivity(), io.homeassistant.companion.android.webvi
         appLocked = presenter.isAppLocked()
         if (appLocked) {
             binding.blurView.setBlurEnabled(true)
-            authenticator.authenticate(getString(commonR.string.biometric_title))
+            if (!unlockingApp) {
+                authenticator.authenticate(getString(commonR.string.biometric_title))
+            }
+            unlockingApp = true
         } else {
             binding.blurView.setBlurEnabled(false)
         }
@@ -1116,11 +1133,20 @@ class WebViewActivity : BaseActivity(), io.homeassistant.companion.android.webvi
         finish()
     }
 
-    override fun loadUrl(url: String, keepHistory: Boolean) {
-        loadedUrl = url
-        clearHistory = !keepHistory
-        webView.loadUrl(url)
-        waitForConnection()
+    override fun loadUrl(url: String, keepHistory: Boolean, openInApp: Boolean) {
+        if (openInApp) {
+            loadedUrl = url
+            clearHistory = !keepHistory
+            webView.loadUrl(url)
+            waitForConnection()
+        } else {
+            try {
+                val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                startActivity(browserIntent)
+            } catch (e: Exception) {
+                Log.e(TAG, "Unable to view url", e)
+            }
+        }
     }
 
     override fun setStatusBarAndNavigationBarColor(statusBarColor: Int, navigationBarColor: Int) {

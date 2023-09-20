@@ -148,6 +148,8 @@ class WidgetDynamicFieldAdapter(
                 // Set text to empty string to prevent a recycled, incorrect value
                 autoCompleteTextView.setText("")
             }
+        } else {
+            autoCompleteTextView.setText("")
         }
 
         // Have the text view store its text for later recall
@@ -203,21 +205,9 @@ class WidgetDynamicFieldAdapter(
         }
     }
 
-    private fun String.toBooleanOrNull(): Boolean? {
-        // Parse all valid YAML boolean values
-        return when (this.trim().lowercase(Locale.getDefault())) {
-            "true" -> true
-            "on" -> true
-            "yes" -> true
-            "y" -> true
-
-            "false" -> false
-            "off" -> false
-            "no" -> false
-            "n" -> false
-
-            // If it's not a valid YAML boolean, return null
-            else -> null
-        }
+    private fun String.toBooleanOrNull(): Boolean? = when (lowercase()) {
+        "true" -> true
+        "false" -> false
+        else -> null
     }
 }

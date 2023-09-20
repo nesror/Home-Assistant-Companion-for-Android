@@ -19,16 +19,17 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.mikepenz.iconics.IconicsDrawable
-import com.mikepenz.iconics.typeface.library.community.material.CommunityMaterial
 import com.mikepenz.iconics.utils.sizeDp
 import com.mikepenz.iconics.utils.toAndroidIconCompat
 import io.homeassistant.companion.android.common.R
 import io.homeassistant.companion.android.common.data.integration.Entity
+import io.homeassistant.companion.android.common.data.integration.EntityExt
 import io.homeassistant.companion.android.common.data.integration.IntegrationRepository
 import io.homeassistant.companion.android.common.data.integration.domain
 import io.homeassistant.companion.android.common.data.integration.friendlyName
 import io.homeassistant.companion.android.common.data.integration.friendlyState
 import io.homeassistant.companion.android.common.data.integration.getIcon
+import io.homeassistant.companion.android.common.data.integration.isActive
 import io.homeassistant.companion.android.common.data.integration.isExecuting
 import io.homeassistant.companion.android.common.data.integration.onPressed
 import io.homeassistant.companion.android.common.data.prefs.PrefsRepository
@@ -162,7 +163,7 @@ class EntityGridVehicleScreen(
                 Log.i(TAG, "Grid limit ($gridLimit) reached, not adding more entities (${entities.size}) for $title ")
                 return@forEachIndexed
             }
-            val icon = entity.getIcon(carContext) ?: CommunityMaterial.Icon.cmd_cloud_question
+            val icon = entity.getIcon(carContext)
             val gridItem =
                 GridItem.Builder()
                     .setLoading(false)
@@ -212,7 +213,16 @@ class EntityGridVehicleScreen(
                                 sizeDp = 64
                             }.toAndroidIconCompat()
                         )
-                            .setTint(CarColor.DEFAULT)
+                            .setTint(
+                                if (entity.isActive() && entity.domain in EntityExt.STATE_COLORED_DOMAINS) {
+                                    CarColor.createCustom(
+                                        carContext.getColor(R.color.colorYellow),
+                                        carContext.getColor(R.color.colorYellow)
+                                    )
+                                } else {
+                                    CarColor.DEFAULT
+                                }
+                            )
                             .build()
                     )
             }

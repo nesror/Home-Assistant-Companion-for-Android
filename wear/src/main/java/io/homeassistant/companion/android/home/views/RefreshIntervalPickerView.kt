@@ -1,39 +1,38 @@
 package io.homeassistant.companion.android.home.views
 
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Devices
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.wear.compose.material.Button
-import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Picker
-import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.rememberPickerState
-import com.mikepenz.iconics.compose.Image
-import com.mikepenz.iconics.typeface.library.community.material.CommunityMaterial
-import io.homeassistant.companion.android.theme.wearColorPalette
+import androidx.wear.compose.material3.FilledIconButton
+import androidx.wear.compose.material3.Icon
+import androidx.wear.compose.material3.IconButtonDefaults
+import androidx.wear.compose.material3.MaterialTheme
+import androidx.wear.compose.material3.Text
+import androidx.wear.compose.material3.touchTargetAwareSize
+import androidx.wear.tooling.preview.devices.WearDevices
+import com.google.android.horologist.annotations.ExperimentalHorologistApi
+import com.google.android.horologist.composables.picker.toRotaryScrollAdapter
+import com.google.android.horologist.compose.rotaryinput.rotaryWithSnap
+import io.homeassistant.companion.android.theme.wearColorScheme
 import io.homeassistant.companion.android.util.intervalToString
 import io.homeassistant.companion.android.views.ListHeader
-import kotlinx.coroutines.launch
-import kotlin.math.sign
 import io.homeassistant.companion.android.common.R as R
 
+@OptIn(ExperimentalHorologistApi::class)
 @Composable
 fun RefreshIntervalPickerView(
     currentInterval: Int,
@@ -43,11 +42,8 @@ fun RefreshIntervalPickerView(
     val initialIndex = options.indexOf(currentInterval)
     val state = rememberPickerState(
         initialNumberOfOptions = options.size,
-        initiallySelectedOption = if (initialIndex != -1) initialIndex else 0,
-        repeatItems = true
+        initiallySelectedOption = if (initialIndex != -1) initialIndex else 0
     )
-    val coroutineScope = rememberCoroutineScope()
-    val focusRequester = remember { FocusRequester() }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -59,41 +55,33 @@ fun RefreshIntervalPickerView(
             contentDescription = stringResource(R.string.refresh_interval),
             modifier = Modifier
                 .weight(1f)
-                .padding(all = 8.dp)
-                .onRotaryScrollEvent {
-                    coroutineScope.launch {
-                        state.scrollToOption(
-                            state.selectedOption + it.verticalScrollPixels.sign.toInt()
-                        )
-                    }
-                    true
-                }
-                .focusRequester(focusRequester)
-                .focusable()
+                .rotaryWithSnap(state.toRotaryScrollAdapter())
         ) {
             Text(
-                intervalToString(LocalContext.current, options[it]),
-                fontSize = 24.sp,
-                color = if (it != this.selectedOption) wearColorPalette.onBackground else wearColorPalette.primary
+                text = intervalToString(LocalContext.current, options[it]),
+                style = with(LocalDensity.current) {
+                    MaterialTheme.typography.displayMedium.copy(
+                        fontWeight = FontWeight.Medium,
+                        fontSize = MaterialTheme.typography.displayMedium.fontSize.value.dp.toSp() // Ignore text scaling
+                    )
+                },
+                color = wearColorScheme.primary
             )
         }
-        Button(
+        FilledIconButton(
             onClick = { onSelectInterval(options[state.selectedOption]) },
-            colors = ButtonDefaults.primaryButtonColors(),
-            modifier = Modifier
+            modifier = Modifier.touchTargetAwareSize(IconButtonDefaults.SmallButtonSize)
         ) {
-            Image(
-                CommunityMaterial.Icon.cmd_check
+            Icon(
+                Icons.Filled.Check,
+                contentDescription = stringResource(id = R.string.save),
+                modifier = Modifier.size(IconButtonDefaults.iconSizeFor(IconButtonDefaults.SmallButtonSize))
             )
         }
-    }
-
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
     }
 }
 
-@Preview(device = Devices.WEAR_OS_LARGE_ROUND)
+@Preview(device = WearDevices.LARGE_ROUND)
 @Composable
 private fun PreviewRefreshIntervalPickerView() {
     CompositionLocalProvider {

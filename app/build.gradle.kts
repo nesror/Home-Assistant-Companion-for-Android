@@ -206,6 +206,8 @@ dependencies {
     implementation(libs.iconics.compose)
     implementation(libs.community.material.typeface)
 
+    implementation(libs.bundles.paging)
+
     implementation(libs.reorderable)
     implementation(libs.changeLog)
 

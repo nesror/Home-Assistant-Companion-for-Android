@@ -11,6 +11,7 @@ import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.media.AudioManager
 import android.net.wifi.WifiManager
+import android.nfc.NfcAdapter
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
@@ -145,6 +146,12 @@ open class HomeAssistantApplication : Application() {
         registerReceiver(
             sensorReceiver,
             IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
+        )
+
+        // Listen for NFC state changes
+        registerReceiver(
+            sensorReceiver,
+            IntentFilter(NfcAdapter.ACTION_ADAPTER_STATE_CHANGED)
         )
 
         // Listen to changes to the audio input/output on the device

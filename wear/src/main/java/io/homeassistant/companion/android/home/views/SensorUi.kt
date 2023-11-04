@@ -1,6 +1,7 @@
 package io.homeassistant.companion.android.home.views
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -11,18 +12,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.wear.compose.material.Icon
-import androidx.wear.compose.material.Text
-import androidx.wear.compose.material.ToggleChip
-import androidx.wear.compose.material.ToggleChipDefaults
-import io.homeassistant.companion.android.common.R
+import androidx.wear.compose.material3.Text
+import androidx.wear.compose.material3.ToggleButton
+import androidx.wear.tooling.preview.devices.WearDevices
 import io.homeassistant.companion.android.common.sensors.SensorManager
 import io.homeassistant.companion.android.database.sensor.Sensor
+import io.homeassistant.companion.android.theme.getToggleButtonColors
+import io.homeassistant.companion.android.util.ToggleSwitch
 import io.homeassistant.companion.android.util.batterySensorManager
 import kotlinx.coroutines.runBlocking
 
+@SuppressLint("InlinedApi")
 @Composable
 fun SensorUi(
     sensor: Sensor?,
@@ -30,8 +31,6 @@ fun SensorUi(
     basicSensor: SensorManager.BasicSensor,
     onSensorClicked: (String, Boolean) -> Unit
 ) {
-    val checked = sensor?.enabled == true
-
     val backgroundRequest =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
             onSensorClicked(basicSensor.id, it)
@@ -58,9 +57,10 @@ fun SensorUi(
     }
 
     val perm = manager.checkPermission(LocalContext.current, basicSensor.id)
-    ToggleChip(
-        checked = (sensor == null && basicSensor.enabledByDefault) ||
-            (sensor?.enabled == true && perm),
+    val isChecked = (sensor == null && basicSensor.enabledByDefault) ||
+        (sensor?.enabled == true && perm)
+    ToggleButton(
+        checked = isChecked,
         onCheckedChange = { enabled ->
             val permissions = manager.requiredPermissions(basicSensor.id)
             if (perm || !enabled) {
@@ -85,20 +85,12 @@ fun SensorUi(
                 overflow = TextOverflow.Ellipsis
             )
         },
-        toggleControl = {
-            Icon(
-                imageVector = ToggleChipDefaults.switchIcon(checked),
-                contentDescription = if (checked) {
-                    stringResource(R.string.enabled)
-                } else {
-                    stringResource(R.string.disabled)
-                }
-            )
-        }
+        selectionControl = { ToggleSwitch(isChecked) },
+        colors = getToggleButtonColors()
     )
 }
 
-@Preview(device = Devices.WEAR_OS_LARGE_ROUND)
+@Preview(device = WearDevices.LARGE_ROUND)
 @Composable
 private fun PreviewSensorUI() {
     val context = LocalContext.current

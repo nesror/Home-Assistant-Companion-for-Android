@@ -7,17 +7,14 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
-import androidx.wear.compose.material.Chip
-import androidx.wear.compose.material.ChipDefaults
-import androidx.wear.compose.material.PositionIndicator
-import androidx.wear.compose.material.Scaffold
-import androidx.wear.compose.material.Text
+import androidx.wear.compose.material3.Button
+import androidx.wear.compose.material3.Text
+import androidx.wear.tooling.preview.devices.WearDevices
 import io.homeassistant.companion.android.common.sensors.SensorManager
 import io.homeassistant.companion.android.sensors.SensorReceiver
 import io.homeassistant.companion.android.theme.WearAppTheme
+import io.homeassistant.companion.android.theme.getFilledTonalButtonColors
 import io.homeassistant.companion.android.views.ListHeader
 import io.homeassistant.companion.android.views.ThemeLazyColumn
 import io.homeassistant.companion.android.common.R as commonR
@@ -26,39 +23,22 @@ import io.homeassistant.companion.android.common.R as commonR
 fun SensorsView(
     onClickSensorManager: (SensorManager) -> Unit
 ) {
-    val scalingLazyListState = rememberScalingLazyListState()
-
     WearAppTheme {
-        Scaffold(
-            positionIndicator = {
-                if (scalingLazyListState.isScrollInProgress) {
-                    PositionIndicator(scalingLazyListState = scalingLazyListState)
-                }
-            },
-            timeText = { TimeText(scalingLazyListState = scalingLazyListState) }
-        ) {
-            val sensorManagers = getSensorManagers()
-            ThemeLazyColumn(
-                state = scalingLazyListState
-            ) {
-                item {
-                    ListHeader(id = commonR.string.sensors)
-                }
-                items(sensorManagers.size, { sensorManagers[it].name }) { index ->
-                    val manager = sensorManagers[index]
-                    Row {
-                        Chip(
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            colors = ChipDefaults.secondaryChipColors(),
-                            label = {
-                                Text(
-                                    text = stringResource(manager.name)
-                                )
-                            },
-                            onClick = { onClickSensorManager(manager) }
-                        )
-                    }
+        val sensorManagers = getSensorManagers()
+        ThemeLazyColumn {
+            item {
+                ListHeader(id = commonR.string.sensors)
+            }
+            items(sensorManagers.size, { sensorManagers[it].name }) { index ->
+                val manager = sensorManagers[index]
+                Row {
+                    Button(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        colors = getFilledTonalButtonColors(),
+                        label = { Text(stringResource(manager.name)) },
+                        onClick = { onClickSensorManager(manager) }
+                    )
                 }
             }
         }
@@ -71,7 +51,7 @@ fun getSensorManagers(): List<SensorManager> {
     return SensorReceiver.MANAGERS.sortedBy { context.getString(it.name) }.filter { it.hasSensor(context) }
 }
 
-@Preview(device = Devices.WEAR_OS_LARGE_ROUND)
+@Preview(device = WearDevices.LARGE_ROUND)
 @Composable
 private fun PreviewSensorsView() {
     CompositionLocalProvider {

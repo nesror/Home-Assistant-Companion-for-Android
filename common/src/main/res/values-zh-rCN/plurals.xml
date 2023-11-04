@@ -4,12 +4,12 @@
         <item quantity="other">%d 实例被找到</item>
     </plurals>
     <plurals name="exo_controls_fastforward_by_amount_description">
-        <item quantity="other">快进 %d 秒</item>
         <item quantity="one">快进 %d 秒</item>
+        <item quantity="other">快进 %d 秒</item>
     </plurals>
     <plurals name="exo_controls_rewind_by_amount_description">
-        <item quantity="other">快退 %d 秒</item>
         <item quantity="one">快退 %d 秒</item>
+        <item quantity="other">快退 %d 秒</item>
     </plurals>
     <plurals name="interval_hours">
         <item quantity="other">小时</item>
@@ -21,7 +21,10 @@
         <item quantity="other">秒</item>
     </plurals>
     <plurals name="mtrl_badge_content_description">
-        <item quantity="other">%d 条新通知</item>
         <item quantity="one">%d 条新通知</item>
+        <item quantity="other">%d 条新通知</item>
+    </plurals>
+    <plurals name="n_entities">
+        <item quantity="other">%d 个实体</item>
     </plurals>
 </resources>

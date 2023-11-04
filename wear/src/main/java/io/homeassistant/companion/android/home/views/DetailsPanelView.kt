@@ -2,13 +2,11 @@ package io.homeassistant.companion.android.home.views
 
 import android.content.Context
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -16,36 +14,40 @@ import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
-import androidx.wear.compose.material.Icon
-import androidx.wear.compose.material.InlineSlider
-import androidx.wear.compose.material.InlineSliderDefaults
-import androidx.wear.compose.material.PositionIndicator
-import androidx.wear.compose.material.Scaffold
-import androidx.wear.compose.material.Text
-import androidx.wear.compose.material.ToggleButton
-import androidx.wear.compose.material.ToggleButtonDefaults
-import androidx.wear.compose.material.ToggleChipDefaults
+import androidx.wear.compose.material3.ExperimentalWearMaterial3Api
+import androidx.wear.compose.material3.IconButtonDefaults
+import androidx.wear.compose.material3.IconToggleButton
+import androidx.wear.compose.material3.InlineSlider
+import androidx.wear.compose.material3.InlineSliderDefaults
+import androidx.wear.compose.material3.Text
+import androidx.wear.compose.material3.touchTargetAwareSize
+import androidx.wear.tooling.preview.devices.WearDevices
 import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.community.material.CommunityMaterial
 import io.homeassistant.companion.android.common.R
 import io.homeassistant.companion.android.common.data.integration.Entity
 import io.homeassistant.companion.android.common.data.integration.EntityExt
 import io.homeassistant.companion.android.common.data.integration.domain
+import io.homeassistant.companion.android.common.data.integration.friendlyName
 import io.homeassistant.companion.android.common.data.integration.getFanSpeed
 import io.homeassistant.companion.android.common.data.integration.getFanSteps
+import io.homeassistant.companion.android.common.data.integration.getIcon
 import io.homeassistant.companion.android.common.data.integration.getLightBrightness
+import io.homeassistant.companion.android.common.data.integration.isActive
 import io.homeassistant.companion.android.common.data.integration.supportsFanSetSpeed
 import io.homeassistant.companion.android.common.data.integration.supportsLightBrightness
 import io.homeassistant.companion.android.common.data.integration.supportsLightColorTemperature
 import io.homeassistant.companion.android.theme.WearAppTheme
+import io.homeassistant.companion.android.theme.getInlineSliderDefaultColors
+import io.homeassistant.companion.android.theme.wearColorScheme
 import io.homeassistant.companion.android.util.getColorTemperature
 import io.homeassistant.companion.android.util.onEntityClickedFeedback
 import io.homeassistant.companion.android.util.onEntityFeedback
 import io.homeassistant.companion.android.util.previewEntity1
+import io.homeassistant.companion.android.util.previewEntity2
+import io.homeassistant.companion.android.util.previewEntity4
 import io.homeassistant.companion.android.views.ListHeader
 import io.homeassistant.companion.android.views.ThemeLazyColumn
 import java.text.DateFormat
@@ -62,121 +64,116 @@ fun DetailsPanelView(
 ) {
     val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
-    val scalingLazyListState = rememberScalingLazyListState()
 
     WearAppTheme {
-        Scaffold(
-            positionIndicator = {
-                if (scalingLazyListState.isScrollInProgress) {
-                    PositionIndicator(scalingLazyListState = scalingLazyListState)
-                }
-            },
-            timeText = { TimeText(scalingLazyListState = scalingLazyListState) }
-        ) {
-            ThemeLazyColumn(state = scalingLazyListState) {
-                val attributes = entity.attributes as Map<*, *>
+        ThemeLazyColumn {
+            val attributes = entity.attributes as Map<*, *>
 
-                item {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
+            item {
+                // Style similar to icon on frontend tile card
+                val isChecked = entity.isActive()
+                if (entity.domain in EntityExt.DOMAINS_TOGGLE) {
+                    IconToggleButton(
+                        checked = isChecked,
+                        onCheckedChange = {
+                            onEntityToggled(entity.entityId, entity.state)
+                            onEntityClickedFeedback(
+                                isToastEnabled,
+                                isHapticEnabled,
+                                context,
+                                entity.friendlyName,
+                                haptic
+                            )
+                        },
+                        colors = IconButtonDefaults.iconToggleButtonColors(
+                            checkedContainerColor = wearColorScheme.tertiary.copy(alpha = 0.2f),
+                            uncheckedContainerColor = wearColorScheme.surfaceDim
+                        ),
+                        modifier = Modifier.touchTargetAwareSize(IconButtonDefaults.SmallButtonSize)
                     ) {
-                        val friendlyName = attributes["friendly_name"].toString()
-                        Text(friendlyName)
+                        Image(
+                            asset = entity.getIcon(LocalContext.current),
+                            colorFilter = ColorFilter.tint(
+                                if (isChecked) wearColorScheme.tertiary else wearColorScheme.onSurface
+                            ),
+                            contentDescription = stringResource(if (isChecked) R.string.enabled else R.string.disabled),
+                            modifier = Modifier.size(IconButtonDefaults.iconSizeFor(IconButtonDefaults.SmallButtonSize))
+                        )
+                    }
+                } else {
+                    Image(
+                        asset = entity.getIcon(LocalContext.current),
+                        colorFilter = ColorFilter.tint(wearColorScheme.onSurface)
+                    )
+                }
+            }
+            item {
+                ListHeader(entity.friendlyName)
+            }
 
-                        if (entity.domain in EntityExt.DOMAINS_TOGGLE) {
-                            val isChecked = entity.state in listOf("on", "locked", "open", "opening")
-                            ToggleButton(
-                                checked = isChecked,
-                                onCheckedChange = {
-                                    onEntityToggled(entity.entityId, entity.state)
-                                    onEntityClickedFeedback(
-                                        isToastEnabled,
-                                        isHapticEnabled,
-                                        context,
-                                        friendlyName,
-                                        haptic
-                                    )
-                                },
-                                modifier = Modifier
-                                    .padding(start = 16.dp)
-                                    .size(ToggleButtonDefaults.SmallToggleButtonSize)
-                            ) {
-                                Icon(
-                                    imageVector = ToggleChipDefaults.switchIcon(isChecked),
-                                    contentDescription = if (isChecked) {
-                                        stringResource(R.string.enabled)
-                                    } else {
-                                        stringResource(R.string.disabled)
-                                    }
-                                )
-                            }
-                        }
+            if (entity.domain == "fan") {
+                if (entity.supportsFanSetSpeed()) {
+                    item {
+                        FanSpeedSlider(entity, onFanSpeedChanged, isToastEnabled, isHapticEnabled)
+                    }
+                }
+            }
+            if (entity.domain == "light") {
+                if (entity.supportsLightBrightness()) {
+                    item {
+                        BrightnessSlider(entity, onBrightnessChanged, isToastEnabled, isHapticEnabled)
                     }
                 }
 
-                if (entity.domain == "fan") {
-                    if (entity.supportsFanSetSpeed()) {
-                        item {
-                            FanSpeedSlider(entity, onFanSpeedChanged, isToastEnabled, isHapticEnabled)
-                        }
+                if (entity.supportsLightColorTemperature() && attributes["color_mode"] == EntityExt.LIGHT_MODE_COLOR_TEMP) {
+                    item {
+                        ColorTempSlider(attributes, onColorTempChanged, isToastEnabled, isHapticEnabled)
                     }
                 }
-                if (entity.domain == "light") {
-                    if (entity.supportsLightBrightness()) {
-                        item {
-                            BrightnessSlider(entity, onBrightnessChanged, isToastEnabled, isHapticEnabled)
-                        }
-                    }
+            }
 
-                    if (entity.supportsLightColorTemperature() && attributes["color_mode"] == EntityExt.LIGHT_MODE_COLOR_TEMP) {
-                        item {
-                            ColorTempSlider(attributes, onColorTempChanged, isToastEnabled, isHapticEnabled)
-                        }
-                    }
-                }
-
-                item {
-                    ListHeader(R.string.details)
-                }
-                item {
-                    Text(
-                        stringResource(R.string.state_name, entity.state),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp)
-                    )
-                }
-                item {
-                    val lastChanged = DateFormat.getDateTimeInstance().format(entity.lastChanged.time)
-                    Text(
-                        stringResource(R.string.last_changed, lastChanged),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp)
-                    )
-                }
-                item {
-                    val lastUpdated = DateFormat.getDateTimeInstance().format(entity.lastUpdated.time)
-                    Text(
-                        stringResource(R.string.last_updated, lastUpdated),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp)
-                    )
-                }
-                item {
-                    Text(
-                        stringResource(R.string.entity_id_name, entity.entityId),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp)
-                    )
-                }
+            item {
+                ListHeader(R.string.details)
+            }
+            item {
+                Text(
+                    stringResource(R.string.state_name, entity.state),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp)
+                )
+            }
+            item {
+                val lastChanged = DateFormat.getDateTimeInstance().format(entity.lastChanged.time)
+                Text(
+                    stringResource(R.string.last_changed, lastChanged),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp)
+                )
+            }
+            item {
+                val lastUpdated = DateFormat.getDateTimeInstance().format(entity.lastUpdated.time)
+                Text(
+                    stringResource(R.string.last_updated, lastUpdated),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp)
+                )
+            }
+            item {
+                Text(
+                    stringResource(R.string.entity_id_name, entity.entityId),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp)
+                )
             }
         }
     }
 }
 
+@OptIn(ExperimentalWearMaterial3Api::class)
 @Composable
 fun FanSpeedSlider(
     entity: Entity<*>,
@@ -214,20 +211,24 @@ fun FanSpeedSlider(
             decreaseIcon = {
                 Image(
                     asset = CommunityMaterial.Icon2.cmd_fan_minus,
-                    colorFilter = ColorFilter.tint(Color.White)
+                    colorFilter = ColorFilter.tint(Color.White),
+                    modifier = Modifier.size(IconButtonDefaults.iconSizeFor(IconButtonDefaults.ExtraSmallButtonSize))
                 )
             },
             increaseIcon = {
                 Image(
                     asset = CommunityMaterial.Icon2.cmd_fan_plus,
-                    colorFilter = ColorFilter.tint(Color.White)
+                    colorFilter = ColorFilter.tint(Color.White),
+                    modifier = Modifier.size(IconButtonDefaults.iconSizeFor(IconButtonDefaults.ExtraSmallButtonSize))
                 )
             },
-            modifier = Modifier.padding(bottom = 8.dp, top = 2.dp)
+            modifier = Modifier.padding(bottom = 8.dp, top = 2.dp),
+            colors = getInlineSliderDefaultColors()
         )
     }
 }
 
+@OptIn(ExperimentalWearMaterial3Api::class)
 @Composable
 fun BrightnessSlider(
     entity: Entity<*>,
@@ -264,20 +265,24 @@ fun BrightnessSlider(
             decreaseIcon = {
                 Image(
                     asset = CommunityMaterial.Icon.cmd_brightness_4,
-                    colorFilter = ColorFilter.tint(Color.White)
+                    colorFilter = ColorFilter.tint(Color.White),
+                    modifier = Modifier.size(IconButtonDefaults.iconSizeFor(IconButtonDefaults.ExtraSmallButtonSize))
                 )
             },
             increaseIcon = {
                 Image(
                     asset = CommunityMaterial.Icon.cmd_brightness_7,
-                    colorFilter = ColorFilter.tint(Color.White)
+                    colorFilter = ColorFilter.tint(Color.White),
+                    modifier = Modifier.size(IconButtonDefaults.iconSizeFor(IconButtonDefaults.ExtraSmallButtonSize))
                 )
             },
-            modifier = Modifier.padding(bottom = 8.dp, top = 2.dp)
+            modifier = Modifier.padding(bottom = 8.dp, top = 2.dp),
+            colors = getInlineSliderDefaultColors()
         )
     }
 }
 
+@OptIn(ExperimentalWearMaterial3Api::class)
 @Composable
 fun ColorTempSlider(
     attributes: Map<*, *>,
@@ -328,20 +333,23 @@ fun ColorTempSlider(
             decreaseIcon = {
                 Image(
                     asset = CommunityMaterial.Icon3.cmd_thermometer_minus,
-                    colorFilter = ColorFilter.tint(Color.White)
+                    colorFilter = ColorFilter.tint(Color.White),
+                    modifier = Modifier.size(IconButtonDefaults.iconSizeFor(IconButtonDefaults.ExtraSmallButtonSize))
                 )
             },
             increaseIcon = {
                 Image(
                     asset = CommunityMaterial.Icon3.cmd_thermometer_plus,
-                    colorFilter = ColorFilter.tint(Color.White)
+                    colorFilter = ColorFilter.tint(Color.White),
+                    modifier = Modifier.size(IconButtonDefaults.iconSizeFor(IconButtonDefaults.ExtraSmallButtonSize))
                 )
             },
             colors = InlineSliderDefaults.colors(
                 selectedBarColor = getColorTemperature(
                     ratio = (currentValue - minValue).toDouble() / (maxValue - minValue).toDouble(),
                     isKelvin = useKelvin
-                )
+                ),
+                containerColor = wearColorScheme.surfaceDim
             ),
             modifier = Modifier.padding(bottom = 8.dp)
         )
@@ -371,12 +379,44 @@ private fun onSliderChangedFeedback(
     )
 }
 
-@Preview(device = Devices.WEAR_OS_LARGE_ROUND)
+@Preview(device = WearDevices.LARGE_ROUND)
 @Composable
-private fun PreviewDetailsPaneView() {
+private fun PreviewDetailsPaneViewEntityFanOn() {
+    CompositionLocalProvider {
+        DetailsPanelView(
+            entity = previewEntity4,
+            onEntityToggled = { _, _ -> },
+            onFanSpeedChanged = {},
+            onBrightnessChanged = {},
+            onColorTempChanged = { _, _ -> },
+            isToastEnabled = false,
+            isHapticEnabled = false
+        )
+    }
+}
+
+@Preview(device = WearDevices.LARGE_ROUND)
+@Composable
+private fun PreviewDetailsPaneViewEntityLightOn() {
     CompositionLocalProvider {
         DetailsPanelView(
             entity = previewEntity1,
+            onEntityToggled = { _, _ -> },
+            onFanSpeedChanged = {},
+            onBrightnessChanged = {},
+            onColorTempChanged = { _, _ -> },
+            isToastEnabled = false,
+            isHapticEnabled = false
+        )
+    }
+}
+
+@Preview(device = WearDevices.LARGE_ROUND)
+@Composable
+private fun PreviewDetailsPaneViewEntityLightOff() {
+    CompositionLocalProvider {
+        DetailsPanelView(
+            entity = previewEntity2,
             onEntityToggled = { _, _ -> },
             onFanSpeedChanged = {},
             onBrightnessChanged = {},

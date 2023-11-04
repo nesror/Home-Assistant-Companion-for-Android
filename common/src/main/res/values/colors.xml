@@ -28,6 +28,7 @@
     <color name="colorCodeBackground">#f5f5f5</color>
     <color name="colorAlertWarning">#1fffa600</color>
     <color name="colorOnAlertWarning">#ffa600</color>
+    <color name="colorOnAlertSuccess">#43a047</color>
     <color name="colorDeviceControlsLightOn">#FDD663</color>
     <color name="colorYellow">#F6C344</color>
     <color name="colorDeviceControlsOff">#9AA0A6</color>
@@ -38,4 +39,5 @@
     <color name="colorPreferenceSuggestion">#1F03A9F4</color> <!-- colorAccent 12% opacity -->
     <color name="colorOnSurfaceVariant">#49454E</color> <!-- M3 On Surface Variant -->
     <color name="colorBottomSheetHandle">#6649454E</color> <!-- M3 On Surface Variant 40% opacity -->
+    <color name="colorLauncherBackground">#18BCF2</color>
 </resources>

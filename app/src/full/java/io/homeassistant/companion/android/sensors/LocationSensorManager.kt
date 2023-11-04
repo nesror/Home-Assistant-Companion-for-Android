@@ -3,6 +3,7 @@ package io.homeassistant.companion.android.sensors
 import android.Manifest
 import android.app.PendingIntent
 import android.bluetooth.BluetoothAdapter
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Context.LOCATION_SERVICE
 import android.content.Context.WIFI_SERVICE
@@ -25,18 +26,25 @@ import com.amap.api.location.AMapLocation
 import com.amap.api.location.AMapLocationClient
 import com.amap.api.location.AMapLocationClientOption
 import com.amap.api.location.AMapLocationListener
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
 import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
 import io.homeassistant.companion.android.GCJ2WGS
 import io.homeassistant.companion.android.common.bluetooth.BluetoothUtils
 import io.homeassistant.companion.android.common.data.integration.Entity
 import io.homeassistant.companion.android.common.data.integration.UpdateLocation
 import io.homeassistant.companion.android.common.data.integration.ZoneAttributes
+import io.homeassistant.companion.android.common.data.prefs.PrefsRepository
 import io.homeassistant.companion.android.common.notifications.DeviceCommandData
-import io.homeassistant.companion.android.common.sensors.LocationSensorManagerBase
 import io.homeassistant.companion.android.common.sensors.SensorManager
 import io.homeassistant.companion.android.common.sensors.SensorReceiverBase
 import io.homeassistant.companion.android.common.util.DisabledLocationHandler
 import io.homeassistant.companion.android.database.AppDatabase
+import io.homeassistant.companion.android.database.location.LocationHistoryItem
+import io.homeassistant.companion.android.database.location.LocationHistoryItemResult
+import io.homeassistant.companion.android.database.location.LocationHistoryItemTrigger
 import io.homeassistant.companion.android.database.sensor.Attribute
 import io.homeassistant.companion.android.database.sensor.SensorSetting
 import io.homeassistant.companion.android.database.sensor.SensorSettingType
@@ -49,6 +57,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.IOException
 import java.util.Locale
+import javax.inject.Inject
 import io.homeassistant.companion.android.common.R as commonR
 
 
@@ -56,7 +65,7 @@ var lastTime = 0L
 var lastTime2 = 0L
 
 @AndroidEntryPoint
-class LocationSensorManager : LocationSensorManagerBase() {
+class LocationSensorManager :  BroadcastReceiver(), SensorManager {
 
     companion object {
         private const val SETTING_SEND_LOCATION_AS = "location_send_as"
@@ -430,7 +439,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
             lastHighAccuracyMode = highAccuracyModeEnabled
             lastHighAccuracyUpdateInterval = updateIntervalHighAccuracySeconds
 
-            serverManager.defaultServers.forEach {
+            serverManager(latestContext).defaultServers.forEach {
                 getSendLocationAsSetting(it.id) // Sets up the setting, value isn't used right now
             }
         }
@@ -652,7 +661,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
     }
 
     private fun getSendLocationAsSetting(serverId: Int): String {
-        return if (serverManager.getServer(serverId)?.version?.isAtLeast(2022, 2, 0) == true) {
+        return if (serverManager(latestContext).getServer(serverId)?.version?.isAtLeast(2022, 2, 0) == true) {
             getSetting(
                 context = latestContext,
                 sensor = backgroundLocation,
@@ -1003,7 +1012,7 @@ class LocationSensorManager : LocationSensorManagerBase() {
 
         ioScope.launch {
             try {
-                serverManager.integrationRepository(serverId).updateLocation(updateLocation)
+                serverManager(latestContext).integrationRepository(serverId).updateLocation(updateLocation)
                 // Update Geocoded Location Sensor
                 if (geocodeIncludeLocation) {
                     val intent = Intent(latestContext, SensorReceiver::class.java)
@@ -1240,5 +1249,63 @@ class LocationSensorManager : LocationSensorManagerBase() {
             "mdi:map",
             attributes
         )
+    }
+
+//    private fun logLocationUpdate(
+//        location: Location?,
+//        updateLocation: UpdateLocation?,
+//        serverId: Int?,
+//        trigger: LocationUpdateTrigger?,
+//        result: LocationHistoryItemResult
+//    ) = ioScope.launch {
+//        if (location == null || !prefsRepository.isLocationHistoryEnabled()) return@launch
+//
+//        val historyTrigger = when (trigger) {
+//            LocationUpdateTrigger.HIGH_ACCURACY_LOCATION -> LocationHistoryItemTrigger.FLP_FOREGROUND
+//            LocationUpdateTrigger.BACKGROUND_LOCATION -> LocationHistoryItemTrigger.FLP_BACKGROUND
+//            LocationUpdateTrigger.GEOFENCE_ENTER -> LocationHistoryItemTrigger.GEOFENCE_ENTER
+//            LocationUpdateTrigger.GEOFENCE_EXIT -> LocationHistoryItemTrigger.GEOFENCE_EXIT
+//            LocationUpdateTrigger.GEOFENCE_DWELL -> LocationHistoryItemTrigger.GEOFENCE_DWELL
+//            LocationUpdateTrigger.SINGLE_ACCURATE_LOCATION -> LocationHistoryItemTrigger.SINGLE_ACCURATE_LOCATION
+//            else -> LocationHistoryItemTrigger.UNKNOWN
+//        }
+//
+//        try {
+//            // Use updateLocation to preserve the 'send location as' setting
+//            AppDatabase.getInstance(latestContext).locationHistoryDao().add(
+//                LocationHistoryItem(
+//                    trigger = historyTrigger,
+//                    result = result,
+//                    latitude = if (updateLocation != null) updateLocation.gps?.getOrNull(0) else location.latitude,
+//                    longitude = if (updateLocation != null) updateLocation.gps?.getOrNull(1) else location.longitude,
+//                    locationName = updateLocation?.locationName,
+//                    accuracy = updateLocation?.gpsAccuracy ?: location.accuracy.toInt(),
+//                    data = updateLocation?.toString(),
+//                    serverId = serverId
+//                )
+//            )
+//        } catch (e: Exception) {
+//            // Context is null? Shouldn't happen but don't let the app crash.
+//        }
+//    }
+
+    @Inject
+    lateinit var prefsRepository: PrefsRepository
+
+    private fun handleInject(context: Context) {
+        // requestSensorUpdate is called outside onReceive, which usually handles injection.
+        // Because we need the preferences for location history settings, inject it if required.
+        if (!this::prefsRepository.isInitialized) {
+            prefsRepository = EntryPointAccessors.fromApplication(
+                context,
+                LocationSensorManagerEntryPoint::class.java
+            ).prefsRepository()
+        }
+    }
+
+    @EntryPoint
+    @InstallIn(SingletonComponent::class)
+    interface LocationSensorManagerEntryPoint {
+        fun prefsRepository(): PrefsRepository
     }
 }

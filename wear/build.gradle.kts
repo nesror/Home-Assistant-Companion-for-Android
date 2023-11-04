@@ -82,6 +82,7 @@ dependencies {
 
     implementation(libs.wear)
     implementation(libs.core.ktx)
+    implementation(libs.core.splashscreen)
     implementation(libs.play.services.wearable)
     implementation(libs.wear.input)
     implementation(libs.wear.remote.interactions)
@@ -103,12 +104,15 @@ dependencies {
     implementation(libs.compose.compiler)
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.foundation)
+    implementation(libs.compose.material.icons.core)
+    implementation(libs.compose.material.icons.extended)
     implementation(libs.compose.uiTooling)
     implementation(libs.wear.compose.foundation)
     implementation(libs.wear.compose.material)
     implementation(libs.wear.compose.navigation)
+    implementation(libs.wear.tooling)
 
-    implementation(libs.horologist.layout)
+    implementation(libs.bundles.horologist)
 
     implementation(libs.guava)
     implementation(libs.bundles.wear.tiles)

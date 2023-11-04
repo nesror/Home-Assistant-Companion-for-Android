@@ -51,7 +51,7 @@ object UpdateUtil {
             val formBody: RequestBody = FormBody.Builder()
                 .add("_api_key", context.getAppMetaDataString("pgy_api_key"))
                 .add("appKey", "8a601dcac3098f0d5c89fa9fe416ca94")
-                .add("buildVersion", BuildConfig.VERSION_NAME)
+                .add("buildVersion", BuildConfig.VERSION_CODE.toString())
                 .build()
             val request = Request.Builder().apply {
                 url("https://www.pgyer.com/apiv2/app/check")

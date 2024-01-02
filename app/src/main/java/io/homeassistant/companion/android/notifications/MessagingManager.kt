@@ -49,19 +49,20 @@ import io.homeassistant.companion.android.common.data.prefs.PrefsRepository
 import io.homeassistant.companion.android.common.data.servers.ServerManager
 import io.homeassistant.companion.android.common.notifications.DeviceCommandData
 import io.homeassistant.companion.android.common.notifications.NotificationData
+import io.homeassistant.companion.android.common.notifications.clearNotification
 import io.homeassistant.companion.android.common.notifications.commandBeaconMonitor
 import io.homeassistant.companion.android.common.notifications.commandBleTransmitter
 import io.homeassistant.companion.android.common.notifications.createChannelID
 import io.homeassistant.companion.android.common.notifications.getGroupNotificationBuilder
 import io.homeassistant.companion.android.common.notifications.handleChannel
 import io.homeassistant.companion.android.common.notifications.handleColor
+import io.homeassistant.companion.android.common.notifications.handleDeleteIntent
 import io.homeassistant.companion.android.common.notifications.handleSmallIcon
 import io.homeassistant.companion.android.common.notifications.handleText
 import io.homeassistant.companion.android.common.notifications.parseColor
 import io.homeassistant.companion.android.common.notifications.parseVibrationPattern
 import io.homeassistant.companion.android.common.notifications.prepareText
 import io.homeassistant.companion.android.common.util.TextToSpeechData
-import io.homeassistant.companion.android.common.util.cancel
 import io.homeassistant.companion.android.common.util.cancelGroupIfNeeded
 import io.homeassistant.companion.android.common.util.getActiveNotification
 import io.homeassistant.companion.android.common.util.speakText
@@ -145,7 +146,6 @@ class MessagingManager @Inject constructor(
 
         // special action constants
         const val REQUEST_LOCATION_UPDATE = "request_location_update"
-        const val CLEAR_NOTIFICATION = "clear_notification"
         const val REMOVE_CHANNEL = "remove_channel"
         const val COMMAND_DND = "command_dnd"
         const val COMMAND_RINGER_MODE = "command_ringer_mode"
@@ -309,9 +309,8 @@ class MessagingManager @Inject constructor(
                     Log.d(TAG, "Request location update")
                     requestAccurateLocationUpdate()
                 }
-                jsonData[NotificationData.MESSAGE] == CLEAR_NOTIFICATION && !jsonData["tag"].isNullOrBlank() -> {
-                    Log.d(TAG, "Clearing notification with tag: ${jsonData["tag"]}")
-                    clearNotification(jsonData["tag"]!!)
+                jsonData[NotificationData.MESSAGE] == NotificationData.CLEAR_NOTIFICATION && !jsonData["tag"].isNullOrBlank() -> {
+                    clearNotification(context, jsonData["tag"]!!)
                 }
                 jsonData[NotificationData.MESSAGE] == REMOVE_CHANNEL && !jsonData[NotificationData.CHANNEL].isNullOrBlank() -> {
                     Log.d(TAG, "Removing Notification channel ${jsonData[NotificationData.CHANNEL]}")
@@ -543,15 +542,6 @@ class MessagingManager @Inject constructor(
         intent.action = LocationSensorManager.ACTION_REQUEST_ACCURATE_LOCATION_UPDATE
 
         context.sendBroadcast(intent)
-    }
-
-    private fun clearNotification(tag: String) {
-        val notificationManagerCompat = NotificationManagerCompat.from(context)
-
-        val messageId = tag.hashCode()
-
-        // Clear notification
-        notificationManagerCompat.cancel(tag, messageId, true)
     }
 
     private fun removeNotificationChannel(channelName: String) {
@@ -886,7 +876,6 @@ class MessagingManager @Inject constructor(
 
     /**
      * Create and show a simple notification containing the received FCM message.
-     *
      */
     private suspend fun sendNotification(data: Map<String, String>, id: Long? = null, received: Long? = null) {
         val notificationManagerCompat = NotificationManagerCompat.from(context)
@@ -947,7 +936,7 @@ class MessagingManager @Inject constructor(
 
         handleReplyHistory(notificationBuilder, data)
 
-        handleDeleteIntent(notificationBuilder, data, messageId, group, groupId, id)
+        handleDeleteIntent(context, notificationBuilder, data, messageId, group, groupId, id)
 
         handleContentIntent(notificationBuilder, data)
 
@@ -1043,29 +1032,6 @@ class MessagingManager @Inject constructor(
         if (actionUri != NO_ACTION) {
             builder.setContentIntent(createOpenUriPendingIntent(actionUri, data))
         }
-    }
-
-    private fun handleDeleteIntent(
-        builder: NotificationCompat.Builder,
-        data: Map<String, String>,
-        messageId: Int,
-        group: String?,
-        groupId: Int,
-        databaseId: Long?
-    ) {
-        val deleteIntent = Intent(context, NotificationDeleteReceiver::class.java).apply {
-            putExtra(NotificationDeleteReceiver.EXTRA_DATA, HashMap(data))
-            putExtra(NotificationDeleteReceiver.EXTRA_NOTIFICATION_GROUP, group)
-            putExtra(NotificationDeleteReceiver.EXTRA_NOTIFICATION_GROUP_ID, groupId)
-            putExtra(NotificationDeleteReceiver.EXTRA_NOTIFICATION_DB, databaseId)
-        }
-        val deletePendingIntent = PendingIntent.getBroadcast(
-            context,
-            messageId,
-            deleteIntent,
-            PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        builder.setDeleteIntent(deletePendingIntent)
     }
 
     private fun handlePersistent(

@@ -117,6 +117,13 @@ class WebViewPresenterImpl @Inject constructor(
 
     override fun getActiveServer(): Int = serverId
 
+    override fun getActiveServerName(): String? =
+        if (serverManager.isRegistered()) {
+            serverManager.getServer(serverId)?.friendlyName
+        } else {
+            null
+        }
+
     override fun updateActiveServer() {
         if (serverManager.isRegistered()) {
             serverManager.getServer()?.let {
@@ -278,6 +285,10 @@ class WebViewPresenterImpl @Inject constructor(
         serverManager.getServer(serverId)?.let {
             serverManager.integrationRepository(serverId).getSessionTimeOut()
         } ?: 0
+    }
+
+    override fun onStart(context: Context) {
+        matterUseCase.suppressDiscoveryBottomSheet(context)
     }
 
     override fun onFinish() {

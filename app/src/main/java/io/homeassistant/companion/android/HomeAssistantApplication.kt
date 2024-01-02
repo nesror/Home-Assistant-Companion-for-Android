@@ -36,6 +36,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
+import javax.inject.Named
 
 @HiltAndroidApp
 open class HomeAssistantApplication : Application() {
@@ -46,6 +47,7 @@ open class HomeAssistantApplication : Application() {
     lateinit var prefsRepository: PrefsRepository
 
     @Inject
+    @Named("keyChainRepository")
     lateinit var keyChainRepository: KeyChainRepository
 
     @Inject
@@ -131,6 +133,7 @@ open class HomeAssistantApplication : Application() {
             IntentFilter().apply {
                 addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION)
                 addAction(WifiManager.WIFI_STATE_CHANGED_ACTION)
+                addAction("android.net.wifi.WIFI_AP_STATE_CHANGED")
             }
         )
 

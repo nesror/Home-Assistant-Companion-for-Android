@@ -118,6 +118,7 @@ import org.chromium.net.CronetEngine
 import org.json.JSONObject
 import java.util.concurrent.Executors
 import javax.inject.Inject
+import javax.inject.Named
 import io.homeassistant.companion.android.common.R as commonR
 
 @OptIn(androidx.media3.common.util.UnstableApi::class)
@@ -191,6 +192,7 @@ class WebViewActivity : BaseActivity(), io.homeassistant.companion.android.webvi
     lateinit var authenticationDao: AuthenticationDao
 
     @Inject
+    @Named("keyChainRepository")
     lateinit var keyChainRepository: KeyChainRepository
 
     @Inject
@@ -804,6 +806,11 @@ class WebViewActivity : BaseActivity(), io.homeassistant.companion.android.webvi
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        presenter.onStart(this)
+    }
+
     override fun onResume() {
         super.onResume()
         if (currentAutoplay != presenter.isAutoPlayVideoEnabled()) {
@@ -1221,8 +1228,14 @@ class WebViewActivity : BaseActivity(), io.homeassistant.companion.android.webvi
         }
         isShowingError = true
 
+        val serverName = if (serverManager.defaultServers.size > 1) presenter.getActiveServerName() else null
         val alert = AlertDialog.Builder(this)
-            .setTitle(commonR.string.error_connection_failed)
+            .setTitle(
+                getString(
+                    commonR.string.error_connection_failed_to,
+                    serverName ?: getString(commonR.string.app_name)
+                )
+            )
             .setOnDismissListener {
                 isShowingError = false
                 alertDialog = null

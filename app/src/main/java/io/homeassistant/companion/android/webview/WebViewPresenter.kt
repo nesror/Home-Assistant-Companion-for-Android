@@ -11,6 +11,7 @@ interface WebViewPresenter {
     fun onViewReady(path: String?)
 
     fun getActiveServer(): Int
+    fun getActiveServerName(): String?
     fun updateActiveServer()
     fun setActiveServer(id: Int)
     fun switchActiveServer(id: Int)
@@ -40,6 +41,8 @@ interface WebViewPresenter {
     fun isAlwaysShowFirstViewOnAppStartEnabled(): Boolean
 
     fun sessionTimeOut(): Int
+
+    fun onStart(context: Context)
 
     fun onFinish()
 

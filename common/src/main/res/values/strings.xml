@@ -113,6 +113,7 @@
     <string name="basic_sensor_name_wifi_signal">WiFi signal strength</string>
     <string name="basic_sensor_name_wifi_state">WiFi state</string>
     <string name="basic_sensor_name_wifi">WiFi connection</string>
+    <string name="basic_sensor_name_hotspot_state">Hotspot state</string>
     <string name="binary_sensor">Binary sensor</string>
     <string name="biometric_message">Unlock using your biometric or screen lock credential</string>
     <string name="biometric_set_title">Confirm to continue</string>
@@ -126,7 +127,7 @@
     <string name="camera">Camera</string>
     <string name="camera_tile">Camera tile</string>
     <string name="camera_tile_desc">See what\'s on your camera</string>
-    <string name="camera_tile_log_in">Log in to Home Assistant to add a camera tile</string>
+    <string name="camera_tile_log_in">Log in to add a camera tile</string>
     <string name="camera_tile_no_tiles_yet">There are no camera tiles added yet - add one from the watch face to set it up</string>
     <string name="camera_tile_no_entity_yet">Edit the tile settings and select a camera to show</string>
     <string name="camera_tile_n">Camera tile #%d</string>
@@ -244,12 +245,13 @@
     <string name="entity_widget_desc">View any entity\'s current state and toggle it</string>
     <string name="error_auth_revoked">It appears that your authorization was revoked, please reconnect to Home Assistant.</string>
     <string name="error_connection_failed">Unable to connect to Home Assistant.</string>
+    <string name="error_connection_failed_to">Unable to connect to %1$s</string>
     <string name="error_loading_entities">Error loading entities</string>
     <string name="error_onboarding_connection_failed">Unable to connect to Home Assistant.</string>
     <string name="error_ssl">Unable to communicate with Home Assistant because of a SSL error.  Please ensure your certificate is valid.</string>
     <string name="error_with_registration">The \'Mobile App\' integration is required to use the app, but it is not available on your Home Assistant server. Please check your server configuration and try again.</string>
     <string name="errors">Errors</string>
-    <string name="error_http_generic">There was an error loading Home Assistant. Please review the connection settings and try again.\n\nError Code: %d \nDescription: %s</string>
+    <string name="error_http_generic">There was an error loading Home Assistant. Please review the connection settings and try again.\n\nError Code: %1$d \nDescription: %2$s</string>
     <string name="event_error">Failed to notify HA of picked option.</string>
     <string name="exit">Exit</string>
     <string name="expand">Expand</string>
@@ -488,6 +490,8 @@
     <string name="other_settings">Other settings</string>
     <string name="other">Other</string>
     <string name="password">Password</string>
+    <string name="password_correct">Correct password</string>
+    <string name="password_incorrect">Incorrect password</string>
     <string name="permission_explanation_calls">In order to track incoming and outgoing call\'s occurrence we need access to your phone state. No phone numbers or other call details will be stored.</string>
     <string name="permission_explanation">In order to use location tracking features or different connection urls based on WiFi SSID we need access to your location. If you want consistent background updates you will also need to allow background processing</string>
     <string name="persistent_notification">Persistent notification</string>
@@ -549,6 +553,7 @@
     <string name="security">Security</string>
     <string name="select">Select</string>
     <string name="select_entity_to_display">Select entity to display</string>
+    <string name="select_file">Select file</string>
     <string name="select_instance">Select your Home Assistant server</string>
     <string name="sensor_description_active_notification_count">Total count of active notifications that are visible to the user including silent, persistent and the Sensor Worker notifications.</string>
     <string name="sensor_description_app_importance">If the app is in the foreground, background or any other state it can be</string>
@@ -566,7 +571,7 @@
     <string name="sensor_description_battery_level">The current battery level of the device</string>
     <string name="sensor_description_battery_state">The current charging state of the battery</string>
     <string name="sensor_description_battery_temperature">The current battery temperature</string>
-    <string name="sensor_description_bluetooth_ble_emitter">Send BLE iBeacon with configured interval, used to track presence around house, e.g. together with roomassistant, esp32-mqtt-room or espresence projects.\n\nWarning: this can affect battery life, particularly if the \"Transmitter power\" setting is set to High or \"Advertise Mode\" is set to Low latency.\n\nSettings allow for specifying:\n- \"UUID\" (standard UUID format), \"Major\" and \"Minor\" (should be 0 - 65535), to tailor identifiers and groups\n- \"Transmitter Power\" and \"Advertise Mode\" to help to preserve battery life (use lowest values if possible)\n - \"Measured Power\" to specify power measured at 1m (initial default -59)\n\nNote:\nAdditionally a separate setting exists (\"Enable Transmitter\") to stop or start transmitting.</string>
+    <string name="sensor_description_bluetooth_ble_emitter">Send BLE iBeacon with configured interval, used to track presence around house, e.g. together with roomassistant, esp32-mqtt-room or espresence projects.\n\nWarning: this can affect battery life, particularly if the \"Transmitter power\" setting is set to High or \"Advertise Mode\" is set to Low latency.\n\nSettings allow for specifying:\n- \"UUID\" (standard UUID format), \"Major\" and \"Minor\" (should be 0 - 65535), to tailor identifiers and groups. The default Minor value 40004 has the special meaning of forcing the beacon to be recognized by the iBeacon Tracker integration\n- \"Transmitter Power\" and \"Advertise Mode\" to help to preserve battery life (use lowest values if possible)\n - \"Measured Power\" to specify power measured at 1m (initial default -59)\n\nNote:\nAdditionally a separate setting exists (\"Enable Transmitter\") to stop or start transmitting.</string>
     <string name="sensor_description_bluetooth_ble_beacon_monitor">Scans for iBeacons and shows the IDs of nearby beacons and their distance in meters. A notification will be shown on the device when scanning is actively running.\n\nWarning: this can affect battery life, especially with a short \"Scan Interval\".\n\nSettings allow for specifying:\n- \"Filter Iterations\" (should be 1 - 100, default: 10), higher values will result in more stable measurements but also less responsiveness.\n- \"Filter RSSI Multiplier\" (should be 1.0 - 2.0, default: 1.05), can be used to archive more stable measurements when beacons are farther away. This will also affect responsiveness.\n- \"Scan Interval\" (default: 500) milliseconds between scans. Shorter intervals will drain the battery more quickly.\n- \"Scan Period\" (default: 1100) milliseconds to scan for beacons. Most beacons will send a signal every second so this value should be at least 1100ms.\n- \"UUID Filter\" allows to restrict the reported beacons by including (or excluding) those with the selected UUIDs.\n- \"Exclude selected UUIDs\", if false (default) only the beacons with the selected UUIDs are reported. If true all beacons except the selected ones are reported. Not available when \"UUID Filter\" is empty.\n\nNote:\nAdditionally a separate setting exists (\"Enable Beacon Monitor\") to stop or start scanning.</string>
     <string name="sensor_description_bluetooth_connection">Information about currently connected Bluetooth devices</string>
     <string name="sensor_description_bluetooth_state">Whether Bluetooth is enabled on the device</string>
@@ -589,6 +594,7 @@
     <string name="sensor_description_headphone">Whether headphones are plugged into the device</string>
     <string name="sensor_description_headset_mounted">Whether the headset is currently in use</string>
     <string name="sensor_description_high_accuracy_mode">Whether high accuracy mode is active on the device</string>
+    <string name="sensor_description_hotspot">Whether the WIFI hotspot is enabled</string>
     <string name="sensor_description_interactive">Whether the device is in an interactive state</string>
     <string name="sensor_description_internal_storage">Information about the total and available storage space internally</string>
     <string name="sensor_description_keyguard_locked">Whether the keyguard is currently locked</string>
@@ -774,14 +780,14 @@
     <string name="shortcuts_choose">Choose shortcuts</string>
     <string name="shortcut5_note">Not all launchers support displaying 5 shortcuts, you may not see this shortcut if the above 4 are already added.</string>
     <string name="shortcuts_summary">Add shortcuts to launcher</string>
-    <string name="shortcut_tiles">Shortcut tiles</string>
+    <string name="shortcut_tiles">Shortcuts tiles</string>
     <string name="shortcuts_tile_n">Shortcuts tile #%d</string>
     <string name="shortcuts_tile_select">Select shortcuts tile to manage</string>
     <string name="shortcuts_tile_description">Select up to 7 entities</string>
     <string name="shortcuts_tile_empty">Choose entities in settings</string>
-    <string name="shortcuts_tile_text_setting">Show names on shortcuts tile</string>
-    <string name="shortcuts_tile_log_in">Log in to Home Assistant to add your first shortcut</string>
-    <string name="shortcuts_tile_no_tiles_yet">There are no shortcut tiles added yet</string>
+    <string name="shortcuts_tile_text_setting">Show names on tile</string>
+    <string name="shortcuts_tile_log_in">Log in to add your first shortcut</string>
+    <string name="shortcuts_tile_no_tiles_yet">There are no shortcuts tiles added yet</string>
     <string name="shortcuts">Shortcuts</string>
     <string name="show">Show</string>
     <string name="show_on_map">Show on map</string>
@@ -845,7 +851,7 @@
     <string name="template_tile_content">Template tile content</string>
     <string name="template_tile_desc">Renders and displays a template</string>
     <string name="template_tile_empty">Set template in the phone settings</string>
-    <string name="template_tile_log_in">Log in to Home Assistant to set up a template</string>
+    <string name="template_tile_log_in">Log in to set up a template</string>
     <string name="template_error">Error in template</string>
     <string name="template_render_error">Error rendering template</string>
     <string name="template_tile_help">Provide a template below that will be displayed on the Wear OS template tile. See help for markup options.</string>
@@ -1090,6 +1096,8 @@
     <string name="tls_cert_title">TLS client certificate error</string>
     <string name="tls_cert_not_found_message">The remote site requires a client certificate.\nPlease install the required credential on your phone and try again.</string>
     <string name="tls_cert_expired_message">The certificate is not yet or no longer valid.\nPlease install a new credential on your phone and try again.</string>
+    <string name="tls_cert_onboarding_description">If your Home Assistant instance requires TLS client certificate authentication, select a TLS client certificate file to install it on your Wear OS device.</string>
+    <string name="tls_cert_onboarding_title">TLS client certificate</string>
     <string name="basic_sensor_name_battery_power">Battery power</string>
     <string name="widget_checkbox_require_authentication">Require authentication</string>
     <string name="widget_error_authenticating">Error authenticating - is an authentication method configured?</string>
@@ -1152,7 +1160,7 @@
     <string name="assist_error">Oops, an error has occurred</string>
     <string name="assist_how_can_i_assist">How can I assist?</string>
     <string name="assist_last_used_pipeline">Last used assistant</string>
-    <string name="assist_log_in">Log in to Home Assistant to start using Assist</string>
+    <string name="assist_log_in">Log in to start using Assist</string>
     <string name="assist_manage_pipelines">Manage assistants</string>
     <string name="assist_permission">To use Assist with your voice, allow Home Assistant to access the microphone</string>
     <string name="assist_pipeline">Assistant</string>

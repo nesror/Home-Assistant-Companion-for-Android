@@ -51,7 +51,7 @@ object UpdateUtil {
             val formBody: RequestBody = FormBody.Builder()
                 .add("_api_key", context.getAppMetaDataString("pgy_api_key"))
                 .add("appKey", "8a601dcac3098f0d5c89fa9fe416ca94")
-                .add("buildVersion", BuildConfig.VERSION_NAME)
+                .add("buildVersion", BuildConfig.VERSION_CODE.toString())
                 .build()
             val request = Request.Builder().apply {
                 url("https://www.pgyer.com/apiv2/app/check")
@@ -99,14 +99,6 @@ object UpdateUtil {
     }
 
     private fun githubCheckNew(context: Activity, okHttpClient: OkHttpClient) {
-        runBlocking(Dispatchers.Main) {
-            Toast.makeText(
-                context,
-                "次数用尽检查更新失败，尝试备用更新，推荐关注公众号：UnknownExceptions 回复最新版进行更新",
-                Toast.LENGTH_SHORT
-            ).show()
-        }
-
         try {
             val request = Request.Builder().apply {
                 url("https://github.com/nesror/Home-Assistant-Companion-for-Android/releases/latest")

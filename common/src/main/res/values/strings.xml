@@ -82,6 +82,7 @@
     <string name="basic_sensor_name_high_accuracy_mode">High accuracy mode</string>
     <string name="basic_sensor_name_interactive">Interactive</string>
     <string name="basic_sensor_name_internal_storage">Internal storage</string>
+    <string name="basic_sensor_name_ip6_addresses">IPv6 addresses</string>
     <string name="basic_sensor_name_keyguard_locked">Keyguard locked</string>
     <string name="basic_sensor_name_keyguard_secure">Keyguard secure</string>
     <string name="basic_sensor_name_last_notification">Last notification</string>
@@ -132,8 +133,8 @@
     <string name="camera_tile_no_entity_yet">Edit the tile settings and select a camera to show</string>
     <string name="camera_tile_n">Camera tile #%d</string>
     <string name="camera_tiles">Camera tiles</string>
-    <string name="camera_widgets">Camera widgets</string>
-    <string name="camera_widget_desc">Displays the latest image from the camera</string>
+    <string name="camera_widgets">Picture widgets</string>
+    <string name="camera_widget_desc">Displays the latest picture from a camera or image entity</string>
     <string name="cancel">Cancel</string>
     <string name="changelog">View full change log</string>
     <string name="checking_with_home_assistant">Checking with Home Assistant</string>
@@ -248,7 +249,7 @@
     <string name="error_connection_failed_to">Unable to connect to %1$s</string>
     <string name="error_loading_entities">Error loading entities</string>
     <string name="error_onboarding_connection_failed">Unable to connect to Home Assistant.</string>
-    <string name="error_ssl">Unable to communicate with Home Assistant because of a SSL error.  Please ensure your certificate is valid.</string>
+    <string name="error_ssl">Unable to communicate with Home Assistant because of a SSL error. Please ensure your certificate is valid.</string>
     <string name="error_with_registration">The \'Mobile App\' integration is required to use the app, but it is not available on your Home Assistant server. Please check your server configuration and try again.</string>
     <string name="errors">Errors</string>
     <string name="error_http_generic">There was an error loading Home Assistant. Please review the connection settings and try again.\n\nError Code: %1$d \nDescription: %2$s</string>
@@ -317,6 +318,7 @@
         <item quantity="one">%d second</item>
         <item quantity="other">%d seconds</item>
     </plurals>
+    <string name="interval_in_view">In view</string>
     <string name="keep_screen_on_def">Do not lock screen when dashboard is active</string>
     <string name="keep_screen_on">Keep screen on</string>
     <string name="pinch_to_zoom_def">Allow pinch-to-zoom gesture to zoom app window</string>
@@ -389,10 +391,10 @@
     <string name="log">Log</string>
     <string name="logbook">Logbook</string>
     <string name="logged_in">Logged in</string>
-    <string name="login">Login</string>
-    <string name="login_on_phone">Login on your phone</string>
-    <string name="login_wear_os_device">Login Wear OS device</string>
-    <string name="logout">Logout</string>
+    <string name="login">Log in</string>
+    <string name="login_on_phone">Log in on your phone</string>
+    <string name="login_wear_os_device">Log in Wear OS device</string>
+    <string name="logout">Log out</string>
     <string name="lovelace_view_dashboard">Dashboard view or Dashboard</string>
     <string name="lovelace">Dashboard</string>
     <string name="mailbox">Mailbox</string>
@@ -406,10 +408,10 @@
     <string name="manage_ssids_introduction">The internal connection URL will be used when connected to one of the listed SSIDs.</string>
     <string name="manage_ssids">Manage SSID(s)</string>
     <string name="manage_this_notification">Manage this notification</string>
-    <string name="manage_tiles_summary">Setup and manage quick settings tiles here. They will not function until you set them up here.</string>
+    <string name="manage_tiles_summary">Set up and manage quick settings tiles here. They will not function until you set them up here.</string>
     <string name="manage_tiles">Manage tiles</string>
     <string name="manage_wear_device">Manage device %1$s</string>
-    <string name="manage_widgets_summary">Edit your widgets, adding/deleting can only be done from the home screen</string>
+    <string name="manage_widgets_summary">Edit your widgets. Adding/deleting can only be done from the home screen.</string>
     <string name="manage_widgets">Manage widgets</string>
     <string name="manual_desc">Enter the URL of your Home Assistant server. Make sure it includes the protocol and port. For example:\n\nhttp://homeassistant.local:8123 or \nhttps://example.duckdns.org.</string>
     <string name="manual_setup">Enter address manually</string>
@@ -452,7 +454,7 @@
     <string name="nfc_invalid_tag">This tag does not contain Home Assistant data</string>
     <string name="nfc_processing_tag_error">Error while processing NFC tag</string>
     <string name="nfc_read_tag_instructions">Hold your device near an NFC tag</string>
-    <string name="nfc_summary">Setup NFC tags</string>
+    <string name="nfc_summary">Set up NFC tags</string>
     <string name="nfc_tag_identifier">Tag identifier</string>
     <string name="nfc_title_nfc_setup">NFC tags</string>
     <string name="nfc_title_settings">NFC tags</string>
@@ -597,11 +599,12 @@
     <string name="sensor_description_hotspot">Whether the WIFI hotspot is enabled</string>
     <string name="sensor_description_interactive">Whether the device is in an interactive state</string>
     <string name="sensor_description_internal_storage">Information about the total and available storage space internally</string>
+    <string name="sensor_description_ip6_addresses">The IPv6 addresses bound to the currently active network interface</string>
     <string name="sensor_description_keyguard_locked">Whether the keyguard is currently locked</string>
     <string name="sensor_description_keyguard_secure">Whether the keyguard is secured by a PIN, pattern or password or a SIM card is currently locked</string>
-    <string name="sensor_description_last_notification">The details of the last notification. You must setup an allow list or explicitly allow all notifications to be sent.\n\nNote: Sending all notification data will result in heavy battery usage.</string>
+    <string name="sensor_description_last_notification">The details of the last notification. You must set up an allow list or explicitly allow all notifications to be sent.\n\nNote: Sending all notification data will result in heavy battery usage.</string>
     <string name="sensor_description_last_reboot">The date and time of the devices last reboot. The setting below will allow you to adjust the deadband in milliseconds, if you still find the value to jump incorrectly. The default value is 60000 (1 minute).</string>
-    <string name="sensor_description_last_removed_notification">The details of the last removed notification. This can be any notification either cleared by the user or removed by an application. You must setup an allow list or explicitly allow all notifications to be sent.\n\nNote: Sending all notification data will result in heavy battery usage.</string>
+    <string name="sensor_description_last_removed_notification">The details of the last removed notification. This can be any notification either cleared by the user or removed by an application. You must set up an allow list or explicitly allow all notifications to be sent.\n\nNote: Sending all notification data will result in heavy battery usage.</string>
     <string name="sensor_description_last_update">The intent action for the last update that was sent, periodic updates will show as \"SensorWorker\".\n\nEnabling the \"Add New Intent\" toggle will create 1 setting to allow you to register for a intent action. The toggle will switch back to off once a new setting is created so you will need to turn it back on to save more intent actions. You can also clear out the setting value to remove the setting in the next update.\n\nIf you are not receiving all intents then you will need to add categories that the intent expects. To do this you will need to add each category after the intent separated by a \",\" repeating until there are no more categories. For example an intent with 2 categories will be: \"intent,category1,category2\" as the setting value.\n\nYou must restart the application after making changes to these settings to take effect.</string>
     <string name="sensor_description_light_sensor">The current level of illuminance</string>
     <string name="sensor_description_location_accurate">Allow Home Assistant to send a notification to request an accurate location along with the application periodically requesting an accurate location.  The Minimum Accuracy setting will allow you to decide how accurate the device location (in meters) has to be in order to send to Home Assistant.  The Minimum time between updates (in milliseconds) keeps the device from sending the accurate location too often. The Include in sensor update setting will make a location request with each sensor update.</string>
@@ -846,7 +849,12 @@
     <string name="tag_reader_title">Processing tag</string>
     <string name="template">Template</string>
     <string name="template_tile">Template tile</string>
-    <string name="template_tile_set_on_watch">Set template to display on Wear OS tile</string>
+    <string name="template_tile_n">Template tile #%d</string>
+    <string name="template_tiles">Template tiles</string>
+    <string name="template_tile_configure">Configure Template tiles</string>
+    <string name="template_tile_select">Select Template tile to manage</string>
+    <string name="template_tile_no_tiles_yet">There are no Template tiles added yet - add one from the watch face to set it up</string>
+    <string name="template_tile_set_on_watch">Configure templates to use as Wear OS tiles</string>
     <string name="template_tile_change_message">Change template in phone settings</string>
     <string name="template_tile_content">Template tile content</string>
     <string name="template_tile_desc">Renders and displays a template</string>
@@ -969,8 +977,8 @@
     <string name="widget_background_type_dynamiccolor">Dynamic color</string>
     <string name="widget_background_type_transparent">Transparent</string>
     <string name="widget_button_image_description">Service button</string>
-    <string name="widget_camera_description">Camera widget</string>
-    <string name="widget_camera_contentdescription">Camera image</string>
+    <string name="widget_camera_description">Picture widget</string>
+    <string name="widget_camera_contentdescription">Image</string>
     <string name="widget_config_service_error">A custom component is preventing service data from loading.</string>
     <string name="widget_creation_error">Unable to create widget.</string>
     <string name="widget_entity_fetch_error">Unable to fetch data for configured entity.</string>
@@ -1145,6 +1153,10 @@
     <string name="thread_debug_result_unsupported_server">The Home Assistant server does not support Thread</string>
     <string name="thread_debug_result_updated">Updated network from Home Assistant on this device</string>
     <string name="thread_debug_summary">Manually update device and server Thread credentials and verify results</string>
+    <string name="thread_export_success">Imported credential</string>
+    <string name="thread_export_none">You don\'t have any credentials to import.</string>
+    <string name="thread_export_not_connected">You are not connected to a local network. Connect to Wi-Fi or ethernet to import Thread credentials.</string>
+    <string name="thread_export_unavailable">Thread is currently unavailable</string>
     <string name="tile_vibrate">Vibrate when clicked</string>
     <string name="tile_auth_required">Requires unlocked device</string>
     <string name="no_results">No results yet</string>

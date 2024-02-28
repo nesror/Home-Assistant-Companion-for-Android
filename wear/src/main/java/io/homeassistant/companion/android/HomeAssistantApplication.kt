@@ -13,14 +13,15 @@ import android.os.PowerManager
 import dagger.hilt.android.HiltAndroidApp
 import io.homeassistant.companion.android.common.data.keychain.KeyChainRepository
 import io.homeassistant.companion.android.common.data.keychain.KeyStoreRepositoryImpl
+import io.homeassistant.companion.android.common.sensors.AudioSensorManager
 import io.homeassistant.companion.android.complications.ComplicationReceiver
 import io.homeassistant.companion.android.sensors.SensorReceiver
+import javax.inject.Inject
+import javax.inject.Named
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import javax.inject.Inject
-import javax.inject.Named
 
 @HiltAndroidApp
 open class HomeAssistantApplication : Application() {
@@ -73,6 +74,7 @@ open class HomeAssistantApplication : Application() {
                 addAction(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
                 addAction(AudioManager.ACTION_HEADSET_PLUG)
                 addAction(AudioManager.RINGER_MODE_CHANGED_ACTION)
+                addAction(AudioSensorManager.VOLUME_CHANGED_ACTION)
             }
         )
 

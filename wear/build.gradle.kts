@@ -58,6 +58,7 @@ android {
     }
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility(libs.versions.javaVersion.get())
         targetCompatibility(libs.versions.javaVersion.get())
     }
@@ -73,6 +74,8 @@ android {
 
 dependencies {
     implementation(project(":common"))
+
+    coreLibraryDesugaring(libs.tools.desugar.jdk)
 
     implementation(libs.kotlin.stdlib)
     implementation(libs.kotlinx.coroutines.android)
@@ -124,11 +127,4 @@ dependencies {
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
-}
-
-// https://github.com/google/guava/releases/tag/v32.1.0: Reporting dependencies that overlap with Guava
-configurations.all {
-    resolutionStrategy.capabilitiesResolution.withCapability("com.google.guava:listenablefuture") {
-        select("com.google.guava:guava:0")
-    }
 }

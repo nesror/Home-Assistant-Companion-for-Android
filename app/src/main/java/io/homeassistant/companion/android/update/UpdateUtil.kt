@@ -15,11 +15,9 @@ import android.view.View
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import io.homeassistant.companion.android.BuildConfig
-import io.homeassistant.companion.android.util.getAppMetaDataString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import okhttp3.*
-import org.json.JSONObject
 import java.io.File
 import java.io.IOException
 import java.util.*
@@ -47,55 +45,55 @@ object UpdateUtil {
             return
         }
 
-        try {
-            val formBody: RequestBody = FormBody.Builder()
-                .add("_api_key", context.getAppMetaDataString("pgy_api_key"))
-                .add("appKey", "8a601dcac3098f0d5c89fa9fe416ca94")
-                .add("buildVersion", BuildConfig.VERSION_CODE.toString())
-                .build()
-            val request = Request.Builder().apply {
-                url("https://www.pgyer.com/apiv2/app/check")
-                post(formBody)
-            }.build()
-            okHttpClient.newCall(request).enqueue(object : Callback {
-                override fun onFailure(call: Call, e: IOException) {
-                    Log.e("checkNew==>", e.toString())
-                    githubCheckNew(context, okHttpClient)
-                }
-
-                override fun onResponse(call: Call, response: Response) {
-                    val res = response.body?.string()
-                    if (res.isNullOrEmpty()) {
-                        githubCheckNew(context, okHttpClient)
-                        return
-                    }
-                    //Log.e("onResponse==>", res)
-                    val jsonObject = JSONObject(res)
-                    if (jsonObject.getInt("code") != 0) {
-                        githubCheckNew(context, okHttpClient)
-                        return
-                    }
-                    val dataObject = jsonObject.getJSONObject("data")
-                    val buildHaveNewVersion = dataObject.getBoolean("buildHaveNewVersion")
-                    if (!buildHaveNewVersion) return
-                    val downloadURL = dataObject.getString("downloadURL")
-                    val ver = dataObject.getString("buildVersion")
-                    val desc = try {
-                        dataObject.getString("buildUpdateDescription")
-                    } catch (e: Exception) {
-                        "有新版本了！"
-                    }
-                    val updateInfo = UpdateInfo(ver, desc, downloadURL)
-                    val intent = Intent(context, UpdateActivity::class.java)
-                    intent.putExtra(UpdateActivity.UPDATE_INFO, updateInfo)
-                    context.startActivity(intent)
-                    context.overridePendingTransition(0, 0)
-                }
-
-            })
-        } catch (e: Exception) {
-            githubCheckNew(context, okHttpClient)
-        }
+//        try {
+//            val formBody: RequestBody = FormBody.Builder()
+//                .add("_api_key", context.getAppMetaDataString("pgy_api_key"))
+//                .add("appKey", "8a601dcac3098f0d5c89fa9fe416ca94")
+//                .add("buildVersion", BuildConfig.VERSION_CODE.toString())
+//                .build()
+//            val request = Request.Builder().apply {
+//                url("https://www.pgyer.com/apiv2/app/check")
+//                post(formBody)
+//            }.build()
+//            okHttpClient.newCall(request).enqueue(object : Callback {
+//                override fun onFailure(call: Call, e: IOException) {
+//                    Log.e("checkNew==>", e.toString())
+//                    githubCheckNew(context, okHttpClient)
+//                }
+//
+//                override fun onResponse(call: Call, response: Response) {
+//                    val res = response.body?.string()
+//                    if (res.isNullOrEmpty()) {
+//                        githubCheckNew(context, okHttpClient)
+//                        return
+//                    }
+//                    //Log.e("onResponse==>", res)
+//                    val jsonObject = JSONObject(res)
+//                    if (jsonObject.getInt("code") != 0) {
+//                        githubCheckNew(context, okHttpClient)
+//                        return
+//                    }
+//                    val dataObject = jsonObject.getJSONObject("data")
+//                    val buildHaveNewVersion = dataObject.getBoolean("buildHaveNewVersion")
+//                    if (!buildHaveNewVersion) return
+//                    val downloadURL = dataObject.getString("downloadURL")
+//                    val ver = dataObject.getString("buildVersion")
+//                    val desc = try {
+//                        dataObject.getString("buildUpdateDescription")
+//                    } catch (e: Exception) {
+//                        "有新版本了！"
+//                    }
+//                    val updateInfo = UpdateInfo(ver, desc, downloadURL)
+//                    val intent = Intent(context, UpdateActivity::class.java)
+//                    intent.putExtra(UpdateActivity.UPDATE_INFO, updateInfo)
+//                    context.startActivity(intent)
+//                    context.overridePendingTransition(0, 0)
+//                }
+//
+//            })
+//        } catch (e: Exception) {
+        githubCheckNew(context, okHttpClient)
+        //   }
     }
 
     private fun githubCheckNew(context: Activity, okHttpClient: OkHttpClient) {
@@ -109,7 +107,7 @@ object UpdateUtil {
                     runBlocking(Dispatchers.Main) {
                         Toast.makeText(
                             context,
-                            "有新版本了！",
+                            "获取版本信息失败，您可能无法访问github。",
                             Toast.LENGTH_SHORT
                         ).show()
                     }
@@ -125,8 +123,8 @@ object UpdateUtil {
                         Log.d("checkNew==>apkUrl:", apkUrl)
                         val updateInfo = UpdateInfo(
                             ver, "如果无法直接更新，可以关注公众号进行更新！\n" +
-                                    "公众号：UnknownExceptions 回复 最新版 获取新版本\n" +
-                                    "也可回复HA获取全新Flutter版本", apkUrl
+                                "公众号：UnknownExceptions 回复 最新版 获取新版本\n" +
+                                "也可回复HA获取全新Flutter版本", apkUrl
                         )
                         val intent = Intent(context, UpdateActivity::class.java)
                         intent.putExtra(UpdateActivity.UPDATE_INFO, updateInfo)

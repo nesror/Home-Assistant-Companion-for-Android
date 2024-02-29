@@ -67,7 +67,7 @@ android {
 
     val NESTOR_KEYSTORE_PASSWORD = System.getenv("NESTOR_KEYSTORE_PASSWORD")
     val NESTOR_KEYSTORE_ALIAS = System.getenv("NESTOR_KEYSTORE_ALIAS")
-    val PGY_API_KEY = System.getenv("PGY_API_KEY")
+   // val PGY_API_KEY = System.getenv("PGY_API_KEY")
 
     signingConfigs {
         create("release") {
@@ -83,13 +83,13 @@ android {
     buildTypes {
         named("debug").configure {
             signingConfig = signingConfigs.getByName("release")
-            manifestPlaceholders["pgy_api_key"] = PGY_API_KEY
+            //manifestPlaceholders["pgy_api_key"] = PGY_API_KEY
         }
         named("release").configure {
             isDebuggable = false
             isJniDebuggable = false
             signingConfig = signingConfigs.getByName("release")
-            manifestPlaceholders["pgy_api_key"] = PGY_API_KEY
+           // manifestPlaceholders["pgy_api_key"] = PGY_API_KEY
         }
     }
     flavorDimensions.add("version")

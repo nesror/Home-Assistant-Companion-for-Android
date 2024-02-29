@@ -62,10 +62,6 @@
             android:resource="@color/colorPrimary" />
 
         <!--        io.homeassistant.companion.android-->
-        <meta-data
-            android:name="pgy_api_key"
-            android:value="${pgy_api_key}" />
-
 
         <meta-data
             android:name="androidx.car.app.minCarApiLevel"

@@ -67,8 +67,7 @@ wear-remote-interactions = "1.0.0"
 workRuntimeKtx = "2.9.0"
 horologist = "0.5.27"
 zxing = "4.3.0"
-horologist = "0.5.22"
-firebase="2.9.6"
+firebase="3.0.1"
 
 
 [plugins]

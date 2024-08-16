@@ -908,6 +908,10 @@ class WebViewActivity : BaseActivity(), io.homeassistant.companion.android.webvi
             checkAndWarnForDisabledLocation()
         }
         changeLog.showChangeLog(this, false)
+
+        if (::loadedUrl.isInitialized) {
+            waitForConnection()
+        }
     }
 
     override fun onStop() {

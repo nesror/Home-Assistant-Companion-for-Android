@@ -103,9 +103,9 @@ class UpdateActivity : AppCompatActivity() {
         if (!isRegisterReceiver) {
             val receiver = DownloadReceiver()
             val intentFilter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                this.registerReceiver(receiver, intentFilter,RECEIVER_NOT_EXPORTED)
-            }else{
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                this.registerReceiver(receiver, intentFilter, RECEIVER_EXPORTED)
+            } else {
                 this.registerReceiver(receiver, intentFilter)
             }
             isRegisterReceiver = true
